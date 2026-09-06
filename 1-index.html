@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=capsafe">
+<meta name="theme-color" content="#6C5CE7">
+<title>Wonderbyte - Teach Bit the Robot!</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --purple:#6C5CE7; --purple-dark:#5a4bd1; --teal:#00CEC9; --pink:#FF6B9D;
+  --yellow:#FFD93D; --orange:#FF9F43; --red:#FF6B6B; --green:#1DD1A1;
+  --ink:#2D3436; --card:#FFFFFF; --sky1:#74b9ff; --sky2:#a29bfe;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:ui-rounded,'SF Pro Rounded','Comic Sans MS','Chalkboard SE','Segoe UI',sans-serif;
+  background:linear-gradient(180deg,#7FC8FF 0%,#a29bfe 60%,#6C5CE7 100%);
+  color:var(--ink); min-height:100vh; display:flex; justify-content:center;
+}
+#app{width:100%;max-width:480px;min-height:100vh;display:flex;flex-direction:column;padding:14px 14px 30px}
+.screen{display:none;flex-direction:column;flex:1;animation:pop .35s ease}
+.screen.on{display:flex}
+@keyframes pop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+h1{font-size:30px;line-height:1.15;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+h2{font-size:22px}
+.card{background:var(--card);border-radius:24px;padding:18px;box-shadow:0 6px 0 rgba(0,0,0,.12);margin-top:14px}
+.btn{
+  display:block;width:100%;border:none;cursor:pointer;font-family:inherit;font-weight:800;
+  font-size:19px;padding:16px 20px;border-radius:20px;color:#fff;background:var(--purple);
+  box-shadow:0 5px 0 var(--purple-dark);margin-top:14px;transition:transform .08s;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--purple-dark)}
+.btn.teal{background:var(--teal);box-shadow:0 5px 0 #00a8a4}
+.btn.pink{background:var(--pink);box-shadow:0 5px 0 #d14d7e}
+.btn.orange{background:var(--orange);box-shadow:0 5px 0 #d97f26}
+.btn.green{background:var(--green);box-shadow:0 5px 0 #12a37c}
+.btn.ghost{background:#fff;color:var(--purple);box-shadow:0 5px 0 rgba(0,0,0,.15)}
+.btn.small{font-size:15px;padding:10px 14px;width:auto;display:inline-block}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.big-emoji{font-size:52px;text-align:center;display:block}
+.center{text-align:center}
+.muted{color:#636e72;font-size:14px}
+.bit-wrap{display:flex;justify-content:center;margin:8px 0}
+.bit-float{animation:floaty 2.6s ease-in-out infinite}
+.bit-bounce{animation:bounce .7s ease infinite}
+.bit-wiggle{animation:wiggle .4s ease infinite}
+.speech{
+  position:relative;background:#fff;border-radius:18px;padding:12px 16px;margin:10px auto 0;
+  max-width:320px;font-size:16px;font-weight:600;box-shadow:0 4px 0 rgba(0,0,0,.12);
+}
+.speech:before{
+  content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);
+  border:10px solid transparent;border-top:0;border-bottom-color:#fff;
+}
+.island{
+  background:#fff;border-radius:24px;padding:16px;margin-top:14px;display:flex;gap:14px;align-items:center;
+  box-shadow:0 6px 0 rgba(0,0,0,.12);cursor:pointer;border:4px solid transparent;transition:transform .1s;
+}
+.island:active{transform:scale(.97)}
+.island.locked{opacity:.65;cursor:default}
+.island.next{border-color:var(--yellow)}
+.island .scene{font-size:44px}
+.island .meta{flex:1}
+.island .meta h3{font-size:19px}
+.island .meta p{font-size:13px;color:#636e72;margin-top:2px}
+.badge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:99px;color:#fff}
+.badge.done{background:var(--green)} .badge.next{background:var(--orange)} .badge.lock{background:#b2bec3}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.topbar .who{color:#fff;font-weight:800;font-size:16px;text-shadow:0 1px 0 rgba(0,0,0,.2)}
+.icon-btn{background:#fff;border:none;border-radius:14px;font-size:20px;padding:8px 12px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.choice{
+  background:#F1F2F6;border:3px solid #DFE6E9;border-radius:18px;padding:12px;cursor:pointer;
+  text-align:center;font-weight:700;font-size:15px;min-width:calc(50% - 5px);flex:1;transition:transform .08s;
+}
+.choice:active{transform:scale(.95)}
+.choice.sel{border-color:var(--purple);background:#EDEAFF}
+.choice .e{font-size:40px;display:block;margin-bottom:4px}
+.swatch{width:56px;height:56px;border-radius:50%;border:4px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.15);cursor:pointer}
+.swatch.sel{outline:4px solid var(--yellow)}
+input[type=text]{
+  width:100%;font-family:inherit;font-size:20px;font-weight:700;padding:14px 16px;border-radius:16px;
+  border:3px solid #DFE6E9;margin-top:10px;outline:none;
+}
+input[type=text]:focus{border-color:var(--purple)}
+.item-card{
+  background:#fff;border-radius:20px;padding:14px;box-shadow:0 5px 0 rgba(0,0,0,.12);text-align:center;
+}
+.item-card .e{font-size:56px;display:block}
+.item-card .n{font-weight:800;font-size:16px;margin-top:6px}
+.bin-row{display:flex;gap:12px;margin-top:14px}
+.bin{
+  flex:1;border-radius:20px;padding:14px;text-align:center;font-weight:800;font-size:17px;color:#fff;
+  cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.18);transition:transform .08s;
+}
+.bin:active{transform:scale(.95)}
+.bin.fruit{background:var(--green)}
+.bin.not{background:var(--orange)}
+.labeled{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:#F1F2F6;border-radius:99px;padding:6px 12px;font-size:14px;font-weight:700}
+.bar-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700;font-size:14px}
+.bar{flex:1;height:18px;border-radius:99px;background:#F1F2F6;overflow:hidden;position:relative}
+.bar>.fill{position:absolute;top:0;bottom:0;border-radius:99px}
+.fill.pos{background:var(--green);left:50%}
+.fill.neg{background:var(--orange);right:50%}
+.brain-book-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.bcard{
+  border-radius:20px;padding:14px;text-align:center;min-height:120px;display:flex;flex-direction:column;
+  justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.12);
+}
+.bcard.owned{background:#FFF9DB;cursor:pointer}
+.bcard.missing{background:#ECEFF4;color:#B2BEC3}
+.bcard .e{font-size:38px}
+.bcard .t{font-weight:800;font-size:14px;margin-top:6px}
+.player-card{background:#fff;border-radius:20px;padding:12px;box-shadow:0 4px 0 rgba(0,0,0,.12);text-align:center;border:4px solid transparent}
+.player-card.picked{border-color:var(--green)}
+.player-card.sad{border-color:var(--red)}
+.player-card .e{font-size:40px}
+.stars{color:#FFA502;font-size:14px;letter-spacing:2px}
+.confetti{position:fixed;top:-20px;font-size:24px;z-index:99;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.banner{
+  background:#2D3436;color:#fff;border-radius:20px;padding:16px;margin-top:14px;font-size:15px;font-weight:600;
+  box-shadow:0 5px 0 rgba(0,0,0,.25);
+}
+.score-line{font-size:18px;font-weight:800;margin-top:10px}
+.footer-space{height:20px}
+.pill{display:inline-block;background:#EDEAFF;color:var(--purple);font-weight:800;font-size:12px;border-radius:99px;padding:4px 10px;margin-top:6px}
+.shake{animation:shakeX .5s}
+@keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stat{background:#F1F2F6;border-radius:16px;padding:12px;text-align:center}
+.stat .v{font-size:22px;font-weight:800;color:var(--purple)}
+.stat .l{font-size:12px;color:#636e72;font-weight:700;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* ================= STATE ================= */
+const SAVE_KEY='wonderbyte_v1';
+const DEFAULT_STATE={
+  profile:null, // {name,band:'A'|'B',color}
+  p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0},
+  cards:[], upgrades:[],
+  playSeconds:0, sessions:0, breakShownAt:0
+};
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));return s?Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)),s):JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));}
+const $app=document.getElementById('app');
+function T(a,b){return (S.profile&&S.profile.band==='B')?b:a;} // band-aware copy
+function earnCard(id){if(!S.cards.includes(id)){S.cards.push(id);save();}}
+function earnUpgrade(id){if(!S.upgrades.includes(id)){S.upgrades.push(id);save();}}
+/* ================= BIT ROBOT SVG ================= */
+function bitSVG(opts){
+  const o=opts||{};const c=(S.profile&&S.profile.color)||'#6C5CE7';const size=o.size||150;
+  const u=S.upgrades||[];const expr=o.expr||'happy';
+  let extras='';
+  if(u.includes('antenna'))extras+='<line x1="60" y1="18" x2="60" y2="4" stroke="#576574" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="6" r="6" fill="#FFD93D"><animate attributeName="opacity" values="1;.4;1" dur="1.2s" repeatCount="indefinite"/></circle>';
+  if(u.includes('hat'))extras+='<path d="M45 24 L60 2 L75 24 Z" fill="#FF6B9D"/><circle cx="60" cy="3" r="4" fill="#FFD93D"/><rect x="44" y="22" width="32" height="6" rx="3" fill="#FFD93D"/>';
+  if(u.includes('badge'))extras+='<path d="M60 78 l4 7 8 1-6 6 2 8-8-4-8 4 2-8-6-6 8-1z" fill="#FFD93D" stroke="#FFA502" stroke-width="1.5"/>';
+  if(u.includes('boots'))extras+='<ellipse cx="42" cy="118" rx="12" ry="7" fill="#FF9F43"/><ellipse cx="78" cy="118" rx="12" ry="7" fill="#FF9F43"/><path d="M38 118 l-4 8 M46 118 l4 8 M74 118 l-4 8 M82 118 l4 8" stroke="#FFD93D" stroke-width="3" stroke-linecap="round"/>';
+  let mouth='<path d="M48 56 Q60 66 72 56" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  let eyes='<circle cx="45" cy="44" r="7" fill="#2D3436"/><circle cx="75" cy="44" r="7" fill="#2D3436"/><circle cx="47" cy="42" r="2.5" fill="#fff"/><circle cx="77" cy="42" r="2.5" fill="#fff"/>';
+  if(expr==='wow'){mouth='<circle cx="60" cy="60" r="7" fill="#2D3436"/>';eyes='<circle cx="45" cy="44" r="9" fill="#2D3436"/><circle cx="75" cy="44" r="9" fill="#2D3436"/><circle cx="48" cy="41" r="3" fill="#fff"/><circle cx="78" cy="41" r="3" fill="#fff"/>';}
+  if(expr==='sad'){mouth='<path d="M48 62 Q60 52 72 62" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/>';eyes='<path d="M38 44 q7 -6 14 0" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M68 44 q7 -6 14 0" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/>';}
+  if(expr==='think'){mouth='<line x1="50" y1="58" x2="70" y2="58" stroke="#2D3436" stroke-width="4" stroke-linecap="round"/>';eyes='<circle cx="45" cy="44" r="7" fill="#2D3436"/><circle cx="75" cy="44" r="7" fill="#2D3436"/><circle cx="42" cy="41" r="2.5" fill="#fff"/><circle cx="72" cy="41" r="2.5" fill="#fff"/>';}
+  if(expr==='dizzy'){mouth='<path d="M48 58 q6 6 12 0 q6 -6 12 0" stroke="#2D3436" stroke-width="3.5" fill="none" stroke-linecap="round"/>';eyes='<path d="M39 39 l12 10 M51 39 l-12 10" stroke="#2D3436" stroke-width="3.5" stroke-linecap="round"/><path d="M69 39 l12 10 M81 39 l-12 10" stroke="#2D3436" stroke-width="3.5" stroke-linecap="round"/>';}
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 120 124">'+
+    extras+
+    '<rect x="25" y="18" width="70" height="60" rx="18" fill="'+c+'"/>'+
+    '<rect x="33" y="28" width="54" height="42" rx="12" fill="#DFE6E9"/>'+
+    eyes+mouth+
+    '<rect x="15" y="46" width="10" height="20" rx="5" fill="'+c+'" opacity=".8"/><rect x="95" y="46" width="10" height="20" rx="5" fill="'+c+'" opacity=".8"/>'+
+    '<rect x="38" y="80" width="44" height="34" rx="12" fill="'+c+'"/>'+
+    '<circle cx="52" cy="94" r="4" fill="#FFD93D"/><circle cx="68" cy="94" r="4" fill="#00CEC9"/>'+
+    '<rect x="44" y="112" width="10" height="8" rx="4" fill="#576574"/><rect x="66" y="112" width="10" height="8" rx="4" fill="#576574"/>'+
+  '</svg>';
+}
+function confetti(){
+  const em=['🎉','⭐','🌈','💜','✨','🎊','🤖'];
+  for(let i=0;i<26;i++){
+    const d=document.createElement('div');d.className='confetti';
+    d.textContent=em[Math.floor(Math.random()*em.length)];
+    d.style.left=Math.random()*100+'vw';
+    d.style.animationDuration=(1.6+Math.random()*1.6)+'s';
+    d.style.fontSize=(18+Math.random()*20)+'px';
+    document.body.appendChild(d);setTimeout(()=>d.remove(),3400);
+  }
+}
+/* ================= ROUTER ================= */
+let timers=[];
+function clearTimers(){timers.forEach(t=>clearInterval(t));timers=[];}
+function go(html,after){
+  clearTimers();
+  $app.innerHTML=html;
+  window.scrollTo(0,0);
+  if(after)after();
+}
+function esc(s){return String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+/* ================= PARENT GATE ================= */
+let gateTarget='setup';
+function showGate(target){
+  gateTarget=target;
+  const a=6+Math.floor(Math.random()*4), b=6+Math.floor(Math.random()*4);
+  go(`
+    <div class="screen on center">
+      <div class="card" style="margin-top:60px">
+        <span class="big-emoji">🛡️</span>
+        <h2 style="margin-top:8px">Grown-ups only!</h2>
+        <p class="muted" style="margin-top:6px">This door is for parents. Kids, grab a grown-up!</p>
+        <p style="font-size:26px;font-weight:800;margin-top:14px">What is ${a} × ${b}?</p>
+        <input type="text" inputmode="numeric" id="gate-answer" placeholder="Your answer">
+        <p class="muted" id="gate-err" style="color:var(--red);min-height:18px;margin-top:6px"></p>
+        <button class="btn" id="gate-go">Open the door</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('gate-go').onclick=()=>{
+        const v=parseInt(document.getElementById('gate-answer').value,10);
+        if(v===a*b){ if(gateTarget==='setup')showSetup(); else showParent(); }
+        else{document.getElementById('gate-err').textContent='Hmm, not quite. Try again!';document.getElementById('gate-answer').value='';}
+      };
+    });
+}
+/* ================= SETUP ================= */
+function showSetup(){
+  let band=null,color='#6C5CE7';
+  go(`
+    <div class="screen on">
+      <div class="center" style="margin-top:26px">
+        <h1>Welcome to<br>Wonderbyte! 🌟</h1>
+        <p style="color:#fff;font-weight:700;margin-top:8px">A world where kids teach a robot how AI works.</p>
+      </div>
+      <div class="bit-wrap bit-float">${bitSVG({size:130})}</div>
+      <div class="speech">Hi! I'm <b>Bit</b>! 🤖 I don't know anything yet. Will you teach me?</div>
+      <div class="card">
+        <h2>What's your name, teacher?</h2>
+        <input type="text" id="kid-name" maxlength="14" placeholder="Your name">
+        <h2 style="margin-top:18px">How old are you?</h2>
+        <div class="choices">
+          <div class="choice" data-band="A"><span class="e">🧒</span>6 to 8</div>
+          <div class="choice" data-band="B"><span class="e">🧑</span>9 to 12</div>
+        </div>
+        <h2 style="margin-top:18px">Pick my color!</h2>
+        <div class="row" style="justify-content:center;gap:14px;margin-top:10px" id="colors">
+          <div class="swatch sel" data-c="#6C5CE7" style="background:#6C5CE7"></div>
+          <div class="swatch" data-c="#00CEC9" style="background:#00CEC9"></div>
+          <div class="swatch" data-c="#FF6B9D" style="background:#FF6B9D"></div>
+          <div class="swatch" data-c="#FF9F43" style="background:#FF9F43"></div>
+        </div>
+        <p class="muted" id="setup-err" style="color:var(--red);min-height:18px;margin-top:8px"></p>
+        <button class="btn green" id="setup-go">Start the adventure! 🚀</button>
+      </div>
+    </div>`,()=>{
+      document.querySelectorAll('.choice').forEach(ch=>ch.onclick=()=>{
+        document.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+        ch.classList.add('sel');band=ch.dataset.band;
+      });
+      document.querySelectorAll('.swatch').forEach(sw=>sw.onclick=()=>{
+        document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('sel'));
+        sw.classList.add('sel');color=sw.dataset.c;
+        document.querySelector('.bit-wrap').innerHTML=bitSVG({size:130});
+        const p=S.profile;S.profile={name:'',band:'A',color:color};
+        document.querySelector('.bit-wrap').innerHTML=bitSVG({size:130});
+        S.profile=p;
+      });
+      document.getElementById('setup-go').onclick=()=>{
+        const name=document.getElementById('kid-name').value.trim();
+        const err=document.getElementById('setup-err');
+        if(!name){err.textContent='Tell me your name first!';return;}
+        if(!band){err.textContent='Pick your age group!';return;}
+        S.profile={name:name,band:band,color:color};
+        S.sessions++;save();
+        showIntro();
+      };
+    });
+}
+function showIntro(){
+  go(`
+    <div class="screen on">
+      <div class="center" style="margin-top:40px"><h1>Meet Bit 🤖</h1></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:160,expr:'wow'})}</div>
+      <div class="speech">Hi ${esc(S.profile.name)}! I'm Bit. My brain is brand new and <b>totally empty</b>.</div>
+      <div class="card center">
+        <p style="font-size:17px;font-weight:600">${T(
+          'Computers like me learn from EXAMPLES, not magic. You show me things, I find patterns, and sometimes I get them REALLY wrong. That\'s the fun part!',
+          'Here\'s the secret: AI isn\'t magic. Computers like me learn from EXAMPLES you give us. We find patterns in them - and when the examples are bad, we learn bad lessons. Your job: teach me well, catch my mistakes, and learn when NOT to trust me.')}</p>
+        <p style="margin-top:12px;font-size:17px;font-weight:600">Ready to be my teacher? 🎓</p>
+        <button class="btn green" id="intro-go">Let's go!</button>
+      </div>
+    </div>`,()=>{document.getElementById('intro-go').onclick=()=>{earnCard('what-is-ai');showMap();};});
+}
+/* ================= WORLD MAP ================= */
+function islands(){
+  return [
+    {id:'i1',scene:'🏖️',name:'Training Bay',desc:T('Teach me what fruit is!','Teach me to sort fruit - and watch me mess it up.'),state:S.p1.done?'done':(S.p1.step>0?'next':'next'),locked:false},
+    {id:'i2',scene:'⚖️',name:'Fairness Falls',desc:T('Help me pick a fair team!','Something is unfair about my team picks. Can you spot it?'),state:S.p1.done?(S.p2.done?'done':'next'):'lock',locked:!S.p1.done},
+    {id:'i3',scene:'🤿',name:'Robot Reef',desc:T('AI or not? You decide!','Dive in and sort AI from not-AI in the real world.'),state:S.p2.done?(S.p3.done?'done':'next'):'lock',locked:!S.p2.done},
+    {id:'i4',scene:'🏔️',name:'Mistake Mountain',desc:'Coming soon!',state:'lock',locked:true},
+    {id:'i5',scene:'🌋',name:'Deepfake Volcano',desc:'Coming soon!',state:'lock',locked:true},
+  ];
+}
+function mapSpeech(){
+  if(!S.p1.done)return T('Training Bay first! I want to learn about FRUIT! 🍎','First stop: Training Bay. Teach me fruit - then watch me fail spectacularly. 🍎');
+  if(!S.p2.done)return 'You taught me SO well! Next: Fairness Falls. Something feels... off there. ⚖️';
+  if(!S.p3.done)return 'Fair play! Now let\'s dive to Robot Reef - can YOU spot AI in the wild? 🤿';
+  return 'You taught me everything I know, '+esc(S.profile.name)+'! More islands coming soon! 🌟';
+}
+function showMap(){
+  const isl=islands();
+  go(`
+    <div class="screen on">
+      <div class="topbar">
+        <div class="who">🗺️ ${esc(S.profile.name)}'s World</div>
+        <div class="row" style="flex:0 0 auto">
+          <button class="icon-btn" id="map-book" title="Brain Book">📖</button>
+          <button class="icon-btn" id="map-parent" title="For parents">🛡️</button>
+        </div>
+      </div>
+      <div class="bit-wrap bit-float">${bitSVG({size:110})}</div>
+      <div class="speech">${mapSpeech()}</div>
+      <div id="break-slot"></div>
+      ${isl.map(i=>`
+        <div class="island ${i.locked?'locked':''} ${i.state==='next'?'next':''}" data-i="${i.id}">
+          <div class="scene">${i.scene}</div>
+          <div class="meta"><h3>${i.name}</h3><p>${i.desc}</p></div>
+          <span class="badge ${i.state==='done'?'done':(i.state==='next'?'next':'lock')}">${i.state==='done'?'DONE ✓':(i.state==='next'?'GO!':'🔒')}</span>
+        </div>`).join('')}
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('map-book').onclick=showBrainBook;
+      document.getElementById('map-parent').onclick=()=>showGate('parent');
+      document.querySelectorAll('.island').forEach(el=>el.onclick=()=>{
+        const id=el.dataset.i;
+        if(el.classList.contains('locked')){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);return;}
+        if(id==='i1')lesson1();
+        if(id==='i2')lesson2();
+        if(id==='i3')lesson3();
+      });
+      maybeBreakNudge();
+    });
+}
+function maybeBreakNudge(){
+  if(S.playSeconds>720 && (Date.now()-(S.breakShownAt||0))>20*60*1000){
+    S.breakShownAt=Date.now();save();
+    const slot=document.getElementById('break-slot');
+    if(!slot)return;
+    slot.innerHTML=`<div class="banner">🔋 <b>Bit says:</b> Whew! Even robots need to recharge. Stretch, grab some water, look out a window - the islands will wait for you!
+      <div class="row"><button class="btn small ghost" id="brk-ok" style="margin-top:10px">Break time! 🌳</button>
+      <button class="btn small ghost" id="brk-later" style="margin-top:10px">5 more minutes</button></div></div>`;
+    document.getElementById('brk-ok').onclick=()=>{slot.innerHTML=`<div class="banner">🌟 Great choice! See you soon, ${esc(S.profile.name)}!</div>`;};
+    document.getElementById('brk-later').onclick=()=>{slot.innerHTML='';};
+  }
+}
+/* ================= LESSON 1: TRAIN-THE-CLASSIFIER ================= */
+const FEATS={red:'🔴 red',green:'🟢 green',yellow:'🟡 yellow',purple:'🟣 purple',round:'⭕ round',long:'📏 long',sweet:'🍬 sweet',crunchy:'🥨 crunchy',toy:'🧸 toy',stem:'🌱 stem',leafy:'🍃 leafy',bushy:'🌳 bushy'};
+const ITEMS={
+  apple:{e:'🍎',n:'Apple',fruit:true,f:['red','round','sweet','stem']},
+  strawberry:{e:'🍓',n:'Strawberry',fruit:true,f:['red','round','sweet']},
+  cherry:{e:'🍒',n:'Cherries',fruit:true,f:['red','round','sweet','stem']},
+  watermelon:{e:'🍉',n:'Watermelon',fruit:true,f:['red','round','sweet']},
+  cucumber:{e:'🥒',n:'Cucumber',fruit:false,f:['green','long','crunchy']},
+  broccoli:{e:'🥦',n:'Broccoli',fruit:false,f:['green','bushy','crunchy']},
+  lettuce:{e:'🥬',n:'Lettuce',fruit:false,f:['green','leafy','crunchy']},
+  pepper:{e:'🫑',n:'Green pepper',fruit:false,f:['green','crunchy']},
+  greenapple:{e:'🍏',n:'Green apple',fruit:true,f:['green','sweet']},
+  banana:{e:'🍌',n:'Banana',fruit:true,f:['yellow','long','sweet']},
+  ball:{e:'🔴',n:'Red ball',fruit:false,f:['red','toy']},
+  eggplant:{e:'🍆',n:'Eggplant',fruit:false,f:['purple','long']}
+};
+const L1_TRAIN=['apple','strawberry','cherry','watermelon','cucumber','broccoli','lettuce','pepper'];
+const L1_TEST=['greenapple','ball','strawberry','cucumber'];
+const L1_FIX=['greenapple','banana','ball','eggplant'];
+let model={};
+function trainModel(labeled){
+  // labeled: [{id, fruit}] -> per-feature vote (f-n)/max(f,n)
+  const fc={},nc={};
+  labeled.forEach(l=>{ITEMS[l.id].f.forEach(f=>{if(l.fruit)fc[f]=(fc[f]||0)+1;else nc[f]=(nc[f]||0)+1;});});
+  model={};
+  Object.keys(FEATS).forEach(k=>{
+    const f=fc[k]||0,n=nc[k]||0;
+    model[k]=(f===n)?0:(f-n)/Math.max(f,n);
+  });
+}
+function predict(id){
+  let s=0;ITEMS[id].f.forEach(f=>s+=(model[f]||0));
+  if(s>0.15)return{say:true,score:s};
+  if(s<-0.15)return{say:false,score:s};
+  return{say:false,score:s,confused:true};
+}
+function lesson1(){
+  if(S.p1.done){lesson1Replay();return;}
+  const step=S.p1.step||0;
+  if(step===0)l1Story();
+  else l1Story();
+}
+function l1Story(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🏖️ Training Bay</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:140,expr:'wow'})}</div>
+      <div class="speech">I'm SO hungry, ${esc(S.profile.name)}! But I can't tell fruit from not-fruit. Teach me?</div>
+      <div class="card center">
+        <h2>How teaching works</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          '1️⃣ You show me examples<br>2️⃣ I find the pattern<br>3️⃣ I try it alone (uh-oh...)<br>4️⃣ You fix my mistakes!',
+          '1️⃣ You give me training examples<br>2️⃣ I find the pattern hiding in them<br>3️⃣ I test myself on new things (uh-oh...)<br>4️⃣ You figure out WHY I failed and fix my data!')}</p>
+        <button class="btn green" id="l1-start">Start teaching! 🍎</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('l1-start').onclick=()=>l1Label(L1_TRAIN,0,[],1);
+    });
+}
+function l1Label(ids,idx,labeled,phase){
+  if(idx>=ids.length){
+    if(phase===1)l1Train(labeled,1);
+    else l1Train(labeled,2);
+    return;
+  }
+  const id=ids[idx],it=ITEMS[id];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">${phase===1?'🍎 Teach me!':'🔧 Fix my brain!'}</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:90,expr:'think'})}</div>
+      <div class="speech">${phase===1?'Which bin does this go in?':'I need BETTER examples! Which bin for this one?'}</div>
+      <div class="card center">
+        <div class="item-card" style="box-shadow:none">
+          <span class="e">${it.e}</span><div class="n">${it.n}</div>
+          <div class="muted">${it.f.map(f=>FEATS[f]).join(' · ')}</div>
+        </div>
+        <div class="bin-row">
+          <div class="bin fruit" id="bin-y">🍏 FRUIT</div>
+          <div class="bin not" id="bin-n">🧦 NOT FRUIT</div>
+        </div>
+        <p class="muted" style="margin-top:12px">Example ${idx+1} of ${ids.length}</p>
+        <div class="labeled">${labeled.map(l=>`<span class="chip">${ITEMS[l.id].e}${l.fruit?'🍏':'🧦'}</span>`).join('')}</div>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('bin-y').onclick=()=>{labeled.push({id:id,fruit:true});l1Label(ids,idx+1,labeled,phase);};
+      document.getElementById('bin-n').onclick=()=>{labeled.push({id:id,fruit:false});l1Label(ids,idx+1,labeled,phase);};
+    });
+}
+function l1Train(labeled,phase){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🧠 Training time!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-wiggle">${bitSVG({size:150,expr:'think'})}</div>
+      <div class="speech">Crunching your examples... beep... boop...</div>
+      <div class="card center"><h2 id="tr-status">Learning...</h2></div>
+    </div>`,()=>{
+      setTimeout(()=>{
+        trainModel(labeled);
+        if(phase===1){S.p1.step=2;save();}
+        l1Brain(phase,labeled);
+      },2200);
+    });
+}
+function l1Brain(phase,labeled){
+  const entries=Object.entries(model).filter(e=>e[1]!==0).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,6);
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🧠 My brain now</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110,expr:'wow'})}</div>
+      <div class="speech">${phase===1?'Ooooh! I found a PATTERN! Look what I noticed:':'New examples, new pattern! Look now:'}</div>
+      <div class="card">
+        <h2 class="center">What Bit noticed</h2>
+        ${entries.map(([f,v])=>`
+          <div class="bar-row"><span style="width:110px">${FEATS[f]}</span>
+          <div class="bar"><div class="fill ${v>0?'pos':'neg'}" style="width:${Math.min(50,Math.abs(v)*50)}%"></div></div>
+          <span>${v>0?'fruit!':'not!'}</span></div>`).join('')}
+        <p class="muted center" style="margin-top:12px">${T('Green = smells like fruit to me. Orange = smells like NOT fruit.','Green bar = pushes me toward FRUIT. Orange bar = pushes me toward NOT FRUIT. I add them up for each new thing.')}</p>
+        <button class="btn pink" id="l1-test">Test me! 🎯</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('l1-test').onclick=()=>l1Test(L1_TEST,0,[],phase,labeled);
+    });
+}
+function l1Test(ids,idx,results,phase,labeled){
+  if(idx>=ids.length){l1Results(results,phase,labeled);return;}
+  const id=ids[idx],it=ITEMS[id];
+  const p=predict(id);
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🎯 Test ${idx+1} of ${ids.length}</div><span style="width:40px"></span></div>
+      <div class="bit-wrap" id="bit-slot">${bitSVG({size:110,expr:'think'})}</div>
+      <div class="speech" id="sp">Hmm... what do I think THIS is?</div>
+      <div class="card center">
+        <div class="item-card" style="box-shadow:none"><span class="e">${it.e}</span><div class="n">${it.n}</div>
+        <div class="muted">${it.f.map(f=>FEATS[f]).join(' · ')}</div></div>
+        <button class="btn" id="ask">Ask Bit! 🤖</button>
+        <div id="verdict"></div>
+      </div>
+    </div>`,()=>{
+      document.getElementById('ask').onclick=()=>{
+        const guess=p.say;
+        const correct=(guess===it.fruit)&&!p.confused;
+        results.push({id:id,bit:guess,truth:it.fruit,correct:correct,confused:!!p.confused});
+        const bs=document.getElementById('bit-slot'),sp=document.getElementById('sp'),v=document.getElementById('verdict');
+        document.getElementById('ask').style.display='none';
+        if(p.confused){bs.innerHTML=bitSVG({size:110,expr:'dizzy'});sp.innerHTML=`Uhhh... my brain says... <b>NOT fruit</b>? I think? 🥴`;}
+        else{sp.innerHTML=`Bit says: <b>${guess?'🍏 FRUIT!':'🧦 NOT FRUIT!'}</b>`;}
+        setTimeout(()=>{
+          if(correct){bs.innerHTML=bitSVG({size:110,expr:'happy'});v.innerHTML=`<div class="score-line" style="color:var(--green)">✅ Correct! It IS ${it.fruit?'a fruit':'not a fruit'}!</div>`;}
+          else{
+            bs.innerHTML=bitSVG({size:110,expr:'sad'});
+            v.innerHTML=`<div class="score-line" style="color:var(--red)">❌ WRONG! ${it.e} ${it.n} IS ${it.fruit?'a fruit':'not a fruit'}!</div>
+            <p style="font-weight:600;margin-top:6px">${it.fruit?T('But it\'s GREEN... I only saw RED fruits! 😵','But it\'s green! Every fruit in my training data was red, so I learned the wrong rule: red = fruit.'):T('But it\'s RED and ROUND... like the fruits you showed me! 😵','But it\'s red, like every fruit in my training data! I learned "red = fruit" - a fake pattern.')}</p>`;
+            earnCard('mistakes');
+          }
+          v.innerHTML+=`<button class="btn teal" id="next-t" style="margin-top:12px">${idx+1<ids.length?'Next!':'See how I did'}</button>`;
+          document.getElementById('next-t').onclick=()=>l1Test(ids,idx+1,results,phase,labeled);
+        },1300);
+      };
+    });
+}
+function l1Results(results,phase,labeled){
+  const ok=results.filter(r=>r.correct).length;
+  if(phase===1 && ok<results.length){
+    // failure moment -> teach about data
+    go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">😵 Uh-oh...</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-wiggle">${bitSVG({size:130,expr:'dizzy'})}</div>
+      <div class="speech">I got ${ok} of ${results.length} right... WHAT HAPPENED?!</div>
+      <div class="card center">
+        <h2>Detective time! 🕵️</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:10px">${T(
+          'Look at your examples again: ALL my fruits were RED. ALL my not-fruits were GREEN. So I learned a silly rule: "red = fruit"!',
+          'Audit the training data: every fruit was red and round, every non-fruit was green. I never learned what a fruit IS - I learned "red = fruit". That\'s called overfitting to a biased sample, and every real AI does it when its data is one-sided.')}</p>
+        <p style="font-size:16px;font-weight:800;margin-top:12px">How do we fix me? 🛠️</p>
+        <button class="btn green" id="fix">Give me BETTER examples! 🌈</button>
+      </div>
+    </div>`,()=>{
+      earnCard('patterns');
+      document.getElementById('fix').onclick=()=>l1Label(L1_FIX,0,labeled.slice(),2);
+    });
+  } else {
+    // success!
+    S.p1.done=true;S.p1.step=99;earnCard('training-data');earnCard('teacher');earnUpgrade('antenna');save();
+    go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🎉 You did it!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:140,expr:'wow'})}</div>
+      <div class="speech">${ok} of ${results.length} correct! You fixed my brain, ${esc(S.profile.name)}!</div>
+      <div class="card center">
+        <span class="big-emoji">🏆</span>
+        <h2 style="margin-top:6px">Training Bay complete!</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          'You learned the BIG secret: AI is only as good as the examples it learns from!',
+          'You just learned the most important rule in all of AI: a model is only as good as its training data. Diverse examples = smart AI. One-sided examples = confident nonsense.')}</p>
+        <div class="pill">New card: 📚 Training Data</div><br>
+        <div class="pill">Bit upgrade: 📡 Antenna!</div>
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{
+      confetti();
+      document.getElementById('done').onclick=showMap;
+    });
+  }
+}
+function lesson1Replay(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🏖️ Training Bay</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:120})}</div>
+      <div class="speech">You already taught me fruit! 🍎 Want to train me all over again?</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Train me again! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>{S.p1={step:0,done:false};save();l1Story();};
+    });
+}
+/* ================= LESSON 2: FAIRNESS FALLS ================= */
+const PLAYERS=[
+  {n:'Zara',e:'👧🏽',skill:5,shirt:'red'},
+  {n:'Omar',e:'👦🏻',skill:4,shirt:'blue'},
+  {n:'Mira',e:'👧🏻',skill:4,shirt:'red'},
+  {n:'Leo',e:'👦🏾',skill:3,shirt:'blue'},
+  {n:'Ana',e:'👧🏾',skill:5,shirt:'blue'},
+  {n:'Sam',e:'👦🏼',skill:2,shirt:'red'}
+];
+function lesson2(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">⚖️ Fairness Falls</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:120,expr:'happy'})}</div>
+      <div class="speech">${esc(S.profile.name)}! I'm the football coach today! I learned to pick players from an old photo album! 📸</div>
+      <div class="card center">
+        <span class="big-emoji">📸</span>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          'Every player in my photo album wore a RED shirt. So I learned: red shirt = great player!',
+          'My entire training set - this photo album - only shows players in RED shirts. So the pattern I learned is: red shirt = great player. Let\'s see how that goes.')}</p>
+        <button class="btn orange" id="l2-go">Pick the team, Bit! ⚽</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('l2-go').onclick=l2Pick;
+    });
+}
+function l2Pick(){
+  const bitPicks=['Zara','Mira','Sam'];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">⚽ Bit's team</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:90,expr:'happy'})}</div>
+      <div class="speech">My team: Zara, Mira and Sam! GO RED TEAM! 🟥</div>
+      <div class="brain-book-grid">
+        ${PLAYERS.map(p=>`
+          <div class="player-card ${bitPicks.includes(p.n)?'picked':''}" data-n="${p.n}">
+            <span class="e">${p.e}</span>
+            <div style="font-weight:800">${p.n}</div>
+            <div class="stars">${'★'.repeat(p.skill)}${'☆'.repeat(5-p.skill)}</div>
+            <div class="pill" style="background:${p.shirt==='red'?'#FFE3E3':'#E3F2FF'};color:${p.shirt==='red'?'#D63031':'#0984E3'}">${p.shirt==='red'?'🟥 red':'🟦 blue'}</div>
+            ${bitPicks.includes(p.n)?'<div class="pill" style="background:#D3F9D8;color:#2B8A3E">PICKED</div>':''}
+          </div>`).join('')}
+      </div>
+      <div class="card center">
+        <h2>Wait a minute... 🤔</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:6px">${T(
+          'Ana has FIVE stars - the best player here! But I skipped her. Sam has two stars and I picked him. Is that fair?',
+          'Ana has 5 stars - tied best player - and I skipped her. Sam has 2 stars and made the team. I never even looked at skill. My rule was shirt color, because that\'s all my data showed. That\'s bias.')}</p>
+        <p style="font-weight:800;margin-top:10px">Tap the player I should NOT have skipped! 👆</p>
+      </div>
+    </div>`,()=>{
+      document.querySelectorAll('.player-card').forEach(el=>el.onclick=()=>{
+        if(el.dataset.n==='Ana'){l2Fix();}
+        else{el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);}
+      });
+    });
+}
+function l2Fix(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">✅ You caught it!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:120,expr:'wow'})}</div>
+      <div class="speech">You're RIGHT! Ana is amazing and I skipped her just because of her shirt! 😳</div>
+      <div class="card center">
+        <h2>Teach Bit the fix 🛠️</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          'Shirt color tells you NOTHING about skill. Let\'s delete that silly rule!',
+          'Shirt color has zero connection to skill - it only looked that way because my photo album was one-sided. Real AI systems make this exact mistake with real people\'s job applications, loans and faces. The fix: fair, balanced examples - and humans who check.')}</p>
+        <button class="btn green" id="l2-fix">Delete the shirt-color rule! 🗑️</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('l2-fix').onclick=()=>{
+        const fair=['Zara','Ana','Omar'];
+        S.p2.done=true;earnCard('fairness');earnUpgrade('badge');save();
+        go(`
+        <div class="screen on">
+          <div class="topbar"><span style="width:40px"></span><div class="who">🎉 Fair team!</div><span style="width:40px"></span></div>
+          <div class="bit-wrap bit-bounce">${bitSVG({size:110,expr:'wow'})}</div>
+          <div class="speech">New team picked by SKILL: Zara, Ana and Omar! That's fair! ⚽</div>
+          <div class="brain-book-grid">
+            ${PLAYERS.map(p=>`
+              <div class="player-card ${fair.includes(p.n)?'picked':''}">
+                <span class="e">${p.e}</span>
+                <div style="font-weight:800">${p.n}</div>
+                <div class="stars">${'★'.repeat(p.skill)}${'☆'.repeat(5-p.skill)}</div>
+                ${fair.includes(p.n)?'<div class="pill" style="background:#D3F9D8;color:#2B8A3E">PICKED</div>':''}
+              </div>`).join('')}
+          </div>
+          <div class="card center">
+            <span class="big-emoji">🏆</span>
+            <h2 style="margin-top:6px">Fairness Falls complete!</h2>
+            <p style="font-weight:600;margin-top:6px">${T('Unfair examples make unfair AI. You stopped it!','Biased data makes biased AI. People build the data - so people can catch it. That person was you today.')}</p>
+            <div class="pill">New card: ⚖️ Fairness</div><br>
+            <div class="pill">Bit upgrade: ⭐ Star badge!</div>
+            <button class="btn green" id="done">Back to the map 🗺️</button>
+          </div>
+        </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+      };
+    });
+}
+/* ================= LESSON 3: ROBOT REEF (AI or NOT) ================= */
+const REEF=[
+  {e:'🗣️',n:'A speaker that answers your questions',ai:true,why:T('It listens, understands words, and learns what you like!','It understands speech, guesses what you mean, and improves from examples. That\'s AI.')},
+  {e:'🍞',n:'A toaster',ai:false,why:T('It just heats bread the same way every time. No learning!','It follows one fixed rule: heat, then pop. No learning, no AI.')},
+  {e:'📺',n:'A TV app that suggests shows you might like',ai:true,why:T('It learns from what you watched before!','It finds patterns in what millions of people watched. That\'s AI.')},
+  {e:'💡',n:'A light switch',ai:false,why:T('On. Off. That\'s all it knows! 😄','One switch, two states, zero learning. Not AI.')},
+  {e:'🗺️',n:'A map app that finds the fastest way home',ai:true,why:T('It learns from traffic patterns of millions of drivers!','It predicts traffic from tons of real-world data. That\'s AI.')},
+  {e:'🐶',n:'A puppy',ai:false,why:T('A puppy learns lots - but it\'s alive, not a computer!','Dogs learn brilliantly - but AI means a COMPUTER learning. The puppy is just a good boy.')},
+  {e:'🧮',n:'A calculator',ai:false,why:T('It follows exact math rules. It never learns anything new.','Perfect every time because it follows fixed rules - no learning, no AI.')},
+  {e:'🔓',n:'A phone that unlocks when it sees your face',ai:true,why:T('It learned what your face looks like from examples!','It learned to recognize your face from many examples. That\'s AI.')}
+];
+function lesson3(){
+  if(S.p3.done){reefDone();return;}
+  reefCard(0,0,[]);
+}
+function reefCard(idx,score,answers){
+  if(idx>=REEF.length){reefEnd(score);return;}
+  const c=REEF[idx];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🤿 Robot Reef</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:80,expr:'think'})}</div>
+      <div class="speech">AI or NOT? You're the detective now! 🔍 Card ${idx+1} of ${REEF.length}</div>
+      <div class="card center">
+        <span class="big-emoji">${c.e}</span>
+        <h2 style="margin-top:8px">${c.n}</h2>
+        <div class="bin-row">
+          <div class="bin fruit" id="is-ai">🤖 AI!</div>
+          <div class="bin not" id="not-ai">🙅 NOT AI</div>
+        </div>
+        <div id="why"></div>
+      </div>
+      <div class="score-line center" style="color:#fff">Score: ${score} ⭐</div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      const answer=(guess)=>{
+        const right=guess===c.ai;
+        if(right){score++;earnCard('ai-everywhere');}
+        const why=document.getElementById('why');
+        document.getElementById('is-ai').style.display='none';
+        document.getElementById('not-ai').style.display='none';
+        why.innerHTML=`<div class="score-line" style="color:${right?'var(--green)':'var(--red)'}">${right?'✅ Correct!':'❌ Not quite!'}</div>
+          <p style="font-weight:600;margin-top:6px">${c.why}</p>
+          <button class="btn teal" id="next-c">${idx+1<REEF.length?'Next card':'Finish the dive!'}</button>`;
+        document.getElementById('next-c').onclick=()=>reefCard(idx+1,score,answers);
+      };
+      document.getElementById('is-ai').onclick=()=>answer(true);
+      document.getElementById('not-ai').onclick=()=>answer(false);
+    });
+}
+function reefEnd(score){
+  S.p3.done=true;S.p3.best=Math.max(S.p3.best,score);earnCard('detective');earnUpgrade('hat');
+  if(S.p1.done&&S.p2.done)earnUpgrade('boots');
+  save();
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🎉 Dive complete!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:130,expr:'wow'})}</div>
+      <div class="speech">${score} of ${REEF.length}, detective ${esc(S.profile.name)}!</div>
+      <div class="card center">
+        <span class="big-emoji">🏆</span>
+        <h2 style="margin-top:6px">Robot Reef complete!</h2>
+        <p style="font-weight:600;margin-top:8px">${T(
+          'Now you can spot AI hiding in the real world. It\'s everywhere - and now you know its secret: learning from examples!',
+          'AI\'s fingerprint is learning from examples instead of following fixed rules. You can now spot it in the wild - and more importantly, ask "what examples did IT learn from?"')}</p>
+        <div class="pill">New card: 🕵️ AI Detective</div><br>
+        <div class="pill">Bit upgrade: 🎉 Party hat!</div>
+        ${S.upgrades.includes('boots')?'<br><div class="pill">ALL ISLANDS DONE: 🚀 Rocket boots!</div>':''}
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+}
+function reefDone(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🤿 Robot Reef</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110})}</div>
+      <div class="speech">Best score: ${S.p3.best} of ${REEF.length}! Want to dive again?</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Dive again! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>reefCard(0,0,[]);
+    });
+}
+/* ================= BRAIN BOOK ================= */
+const CARDS={
+  'what-is-ai':{e:'🤖',t:'What is AI?',d:T('AI is when computers learn from examples instead of only following fixed rules.','AI = computers that learn patterns from examples, instead of only following hand-written rules.')},
+  'patterns':{e:'🧩',t:'Patterns',d:T('AI finds patterns in examples - like "all the fruits I saw were red". Watch out: silly patterns happen!','Models find patterns in their examples - including accidental, wrong ones like "red = fruit".')},
+  'training-data':{e:'📚',t:'Training Data',d:T('The examples AI learns from. One-sided examples = confused AI. Diverse examples = smart AI!','The examples a model learns from. One-sided data makes a confidently wrong model; diverse data makes a useful one.')},
+  'mistakes':{e:'😵',t:'AI Makes Mistakes',d:T('AI messes up on things it has never seen. Always double-check it!','Models fail on inputs unlike their training data. Never trust one blindly - especially on something new.')},
+  'fairness':{e:'⚖️',t:'Fairness',d:T('Unfair examples teach AI to be unfair. People must check!','Biased examples teach biased rules. Fair data and human checking are how we keep AI fair.')},
+  'ai-everywhere':{e:'🌍',t:'AI All Around',d:T('AI hides in phones, maps, TVs and games. Now you can spot it!','Voice helpers, maps, recommendations, face unlock - AI\'s fingerprint is learning from examples.')},
+  'detective':{e:'🕵️',t:'AI Detective',d:T('You can tell AI from not-AI in the real world. Superpower unlocked!','You can tell learning systems from fixed-rule machines in the real world.')},
+  'teacher':{e:'🎓',t:'Robot Teacher',d:T('You taught a robot from scratch - and fixed its brain when it learned wrong!','You trained a model, diagnosed its failure, and fixed it with better data. That\'s the whole job.')}
+};
+function showBrainBook(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">📖 Brain Book</div><span style="width:40px"></span></div>
+      <div class="speech" style="margin-top:14px">Every big idea you discover becomes a card here! (${S.cards.length} of ${Object.keys(CARDS).length})</div>
+      <div class="brain-book-grid">
+        ${Object.entries(CARDS).map(([id,c])=>{
+          const owned=S.cards.includes(id);
+          return `<div class="bcard ${owned?'owned':'missing'}" data-c="${owned?id:''}">
+            <span class="e">${owned?c.e:'❓'}</span>
+            <div class="t">${owned?c.t:'???'}</div>
+          </div>`;}).join('')}
+      </div>
+      <div id="card-detail"></div>
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.querySelectorAll('.bcard.owned').forEach(el=>el.onclick=()=>{
+        const c=CARDS[el.dataset.c];
+        document.getElementById('card-detail').innerHTML=`<div class="card center"><span class="big-emoji">${c.e}</span><h2>${c.t}</h2><p style="font-weight:600;margin-top:8px">${c.d}</p></div>`;
+        document.getElementById('card-detail').scrollIntoView({behavior:'smooth'});
+      });
+    });
+}
+/* ================= PARENT DASHBOARD ================= */
+function showParent(){
+  const done=[S.p1.done,S.p2.done,S.p3.done].filter(Boolean).length;
+  const mins=Math.floor(S.playSeconds/60);
+  const learned=[];
+  if(S.cards.includes('what-is-ai'))learned.push('What AI is (and isn\'t) - computers learning from examples');
+  if(S.cards.includes('patterns'))learned.push('How AI finds patterns - including accidental wrong ones');
+  if(S.cards.includes('training-data'))learned.push('Training data: one-sided examples make a confused model');
+  if(S.cards.includes('mistakes'))learned.push('AI makes mistakes on things it hasn\'t seen - always double-check');
+  if(S.cards.includes('fairness'))learned.push('Bias: unfair data teaches unfair rules, people must check');
+  if(S.cards.includes('ai-everywhere'))learned.push('Spotting AI in the real world (and what is NOT AI)');
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🛡️ For Parents</div><span style="width:40px"></span></div>
+      <div class="card">
+        <h2>${esc(S.profile.name)}'s progress</h2>
+        <span class="pill">Age band: ${S.profile.band==='A'?'6-8':'9-12'}</span>
+        <div class="stat-grid">
+          <div class="stat"><div class="v">${done} / 3</div><div class="l">Islands completed</div></div>
+          <div class="stat"><div class="v">${S.cards.length} / ${Object.keys(CARDS).length}</div><div class="l">Concept cards</div></div>
+          <div class="stat"><div class="v">${mins} min</div><div class="l">Time playing</div></div>
+          <div class="stat"><div class="v">${S.sessions}</div><div class="l">Sessions</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>What ${esc(S.profile.name)} learned</h2>
+        ${learned.length?learned.map(l=>`<p style="font-weight:600;margin-top:8px">✅ ${l}</p>`).join(''):'<p class="muted" style="margin-top:8px">Nothing yet - the adventure awaits!</p>'}
+      </div>
+      <div class="card">
+        <h2>Our promises 🛡️</h2>
+        <p style="font-weight:600;margin-top:8px">🔒 No ads, no accounts, no data leaves this device</p>
+        <p style="font-weight:600;margin-top:6px">📴 Works fully offline</p>
+        <p style="font-weight:600;margin-top:6px">🤖 Zero open-ended AI - every model here is a safe on-device toy</p>
+        <p style="font-weight:600;margin-top:6px">🌙 No streaks, no timers, no dark patterns - Bit even suggests breaks</p>
+      </div>
+      <div class="card center">
+        <button class="btn ghost small" id="reset" style="color:var(--red)">Reset all progress</button>
+      </div>
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('reset').onclick=()=>{
+        if(confirm('Really erase everything and start over?')){localStorage.removeItem(SAVE_KEY);S=load();location.reload();}
+      };
+    });
+}
+/* ================= BOOT ================= */
+setInterval(()=>{if(S.profile){S.playSeconds++;if(S.playSeconds%10===0)save();}},1000);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+if(S.profile){S.sessions++;save();showMap();}
+else showGate('setup');
+</script>
+</body>
+</html>
