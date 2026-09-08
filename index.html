@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=capsafe">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wonderbyte">
+<meta name="description" content="Kids teach Bit the robot how AI works - patterns, training data, fairness, confidence and fake photos. Offline, no ads, no accounts.">
+<link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#6C5CE7">
 <title>Wonderbyte - Teach Bit the Robot!</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -140,6 +145,19 @@ input[type=text]:focus{border-color:var(--purple)}
 .stat{background:#F1F2F6;border-radius:16px;padding:12px;text-align:center}
 .stat .v{font-size:22px;font-weight:800;color:var(--purple)}
 .stat .l{font-size:12px;color:#636e72;font-weight:700;margin-top:2px}
+.conf-wrap{margin-top:14px;text-align:left}
+.conf-label{font-size:13px;font-weight:800;color:#636e72;display:flex;justify-content:space-between}
+.conf-bar{height:16px;border-radius:99px;background:#F1F2F6;overflow:hidden;margin-top:4px}
+.conf-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--orange),var(--red));width:0;transition:width .9s ease}
+.photo{
+  background:linear-gradient(180deg,#AEE2FF 0%,#AEE2FF 58%,#BFE6C0 58%,#BFE6C0 100%);
+  border-radius:20px;padding:18px 8px;display:flex;justify-content:center;gap:10px;align-items:center;
+  border:4px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.12);min-height:120px;flex-wrap:wrap;
+}
+.photo .pe{font-size:42px;line-height:1}
+.photo .weird{outline:4px dashed var(--red);border-radius:12px;background:rgba(255,107,107,.18);animation:wiggle .5s ease 2}
+.verdict-tag{font-size:15px;font-weight:800;margin-top:10px}
+@media (prefers-reduced-motion:reduce){.bit-float,.bit-bounce,.bit-wiggle,.screen,.confetti{animation:none!important}}
 </style>
 </head>
 <body>
@@ -150,7 +168,7 @@ input[type=text]:focus{border-color:var(--purple)}
 const SAVE_KEY='wonderbyte_v1';
 const DEFAULT_STATE={
   profile:null, // {name,band:'A'|'B',color}
-  p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0},
+  p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0}, p4:{done:false}, p5:{done:false,best:0},
   cards:[], upgrades:[],
   playSeconds:0, sessions:0, breakShownAt:0
 };
@@ -170,6 +188,8 @@ function bitSVG(opts){
   if(u.includes('hat'))extras+='<path d="M45 24 L60 2 L75 24 Z" fill="#FF6B9D"/><circle cx="60" cy="3" r="4" fill="#FFD93D"/><rect x="44" y="22" width="32" height="6" rx="3" fill="#FFD93D"/>';
   if(u.includes('badge'))extras+='<path d="M60 78 l4 7 8 1-6 6 2 8-8-4-8 4 2-8-6-6 8-1z" fill="#FFD93D" stroke="#FFA502" stroke-width="1.5"/>';
   if(u.includes('boots'))extras+='<ellipse cx="42" cy="118" rx="12" ry="7" fill="#FF9F43"/><ellipse cx="78" cy="118" rx="12" ry="7" fill="#FF9F43"/><path d="M38 118 l-4 8 M46 118 l4 8 M74 118 l-4 8 M82 118 l4 8" stroke="#FFD93D" stroke-width="3" stroke-linecap="round"/>';
+  if(u.includes('cape'))extras+='<path d="M28 76 Q60 92 92 76 L86 120 Q60 130 34 120 Z" fill="#FF6B6B" opacity=".92"/>';
+  if(u.includes('crown'))extras+='<path d="M38 22 L46 6 L56 19 L64 4 L74 19 L82 6 L84 22 Z" fill="#FFD93D" stroke="#FFA502" stroke-width="2" stroke-linejoin="round"/><circle cx="64" cy="12" r="3" fill="#FF6B9D"/>';
   let mouth='<path d="M48 56 Q60 66 72 56" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/>';
   let eyes='<circle cx="45" cy="44" r="7" fill="#2D3436"/><circle cx="75" cy="44" r="7" fill="#2D3436"/><circle cx="47" cy="42" r="2.5" fill="#fff"/><circle cx="77" cy="42" r="2.5" fill="#fff"/>';
   if(expr==='wow'){mouth='<circle cx="60" cy="60" r="7" fill="#2D3436"/>';eyes='<circle cx="45" cy="44" r="9" fill="#2D3436"/><circle cx="75" cy="44" r="9" fill="#2D3436"/><circle cx="48" cy="41" r="3" fill="#fff"/><circle cx="78" cy="41" r="3" fill="#fff"/>';}
@@ -269,7 +289,6 @@ function showSetup(){
       document.querySelectorAll('.swatch').forEach(sw=>sw.onclick=()=>{
         document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('sel'));
         sw.classList.add('sel');color=sw.dataset.c;
-        document.querySelector('.bit-wrap').innerHTML=bitSVG({size:130});
         const p=S.profile;S.profile={name:'',band:'A',color:color};
         document.querySelector('.bit-wrap').innerHTML=bitSVG({size:130});
         S.profile=p;
@@ -306,15 +325,17 @@ function islands(){
     {id:'i1',scene:'🏖️',name:'Training Bay',desc:T('Teach me what fruit is!','Teach me to sort fruit - and watch me mess it up.'),state:S.p1.done?'done':(S.p1.step>0?'next':'next'),locked:false},
     {id:'i2',scene:'⚖️',name:'Fairness Falls',desc:T('Help me pick a fair team!','Something is unfair about my team picks. Can you spot it?'),state:S.p1.done?(S.p2.done?'done':'next'):'lock',locked:!S.p1.done},
     {id:'i3',scene:'🤿',name:'Robot Reef',desc:T('AI or not? You decide!','Dive in and sort AI from not-AI in the real world.'),state:S.p2.done?(S.p3.done?'done':'next'):'lock',locked:!S.p2.done},
-    {id:'i4',scene:'🏔️',name:'Mistake Mountain',desc:'Coming soon!',state:'lock',locked:true},
-    {id:'i5',scene:'🌋',name:'Deepfake Volcano',desc:'Coming soon!',state:'lock',locked:true},
+    {id:'i4',scene:'🏔️',name:'Mistake Mountain',desc:T('I answer everything SUPER confidently. Should you always believe me?','I answer with total confidence - even when I am wrong. Can you catch me?'),state:S.p3.done?(S.p4.done?'done':'next'):'lock',locked:!S.p3.done},
+    {id:'i5',scene:'🌋',name:'Deepfake Volcano',desc:T('The Mischief Monkey edited my photos! Spot the fakes!','Some of my photos were secretly edited. Real or fake - you decide.'),state:S.p4.done?(S.p5.done?'done':'next'):'lock',locked:!S.p4.done},
   ];
 }
 function mapSpeech(){
   if(!S.p1.done)return T('Training Bay first! I want to learn about FRUIT! 🍎','First stop: Training Bay. Teach me fruit - then watch me fail spectacularly. 🍎');
   if(!S.p2.done)return 'You taught me SO well! Next: Fairness Falls. Something feels... off there. ⚖️';
   if(!S.p3.done)return 'Fair play! Now let\'s dive to Robot Reef - can YOU spot AI in the wild? 🤿';
-  return 'You taught me everything I know, '+esc(S.profile.name)+'! More islands coming soon! 🌟';
+  if(!S.p4.done)return 'You can spot AI anywhere! Next: Mistake Mountain. I answer EVERYTHING there - very confidently. Should you always believe me? 🏔️';
+  if(!S.p5.done)return 'Sherlock-level checking! Last island: Deepfake Volcano - the Mischief Monkey messed with my photos. Spot the fakes! 🌋';
+  return 'You taught me everything I know, '+esc(S.profile.name)+'! Official AI Master! 🌟';
 }
 function showMap(){
   const isl=islands();
@@ -346,6 +367,8 @@ function showMap(){
         if(id==='i1')lesson1();
         if(id==='i2')lesson2();
         if(id==='i3')lesson3();
+        if(id==='i4')lesson4();
+        if(id==='i5')lesson5();
       });
       maybeBreakNudge();
     });
@@ -775,6 +798,267 @@ function reefDone(){
       document.getElementById('replay').onclick=()=>reefCard(0,0,[]);
     });
 }
+
+/* ================= LESSON 4: MISTAKE MOUNTAIN (confidence vs truth) ================= */
+const MM=[
+  {q:'Do goldfish only remember things for 3 seconds?',
+   bit:'For sure! 3 seconds, then POOF - forgotten!',conf:95,truth:false,
+   fact:T('Nope! Scientists taught goldfish tricks they remembered MONTHS later. My 95% confidence meant nothing!',
+          'False - goldfish remember mazes and feeding routines for months. My confidence was 95% and I was completely wrong.')},
+  {q:'Do octopuses have three hearts?',
+   bit:'Hmm. Three hearts sounds made up... but maybe yes?',conf:40,truth:true,
+   fact:T('It\'s TRUE! Two hearts pump blood to the gills, one to the body. I was unsure - and RIGHT!',
+          'True - two branchial hearts plus one main heart. Notice: I was only 40% sure and completely correct.')},
+  {q:'Can you see the Great Wall of China from space with just your eyes?',
+   bit:'Of course! Everybody knows that one!',conf:92,truth:false,
+   fact:T('Nope - astronauts say it is too thin to see. "Everybody knows" is not proof!',
+          'False - astronauts confirm it is not visible to the naked eye from orbit. A famous "fact" that was never true.')},
+  {q:'Do bananas grow on trees?',
+   bit:'Yep! Tall, woody banana trees!',conf:88,truth:false,
+   fact:T('Trick question! Banana "trees" are giant HERBS - no wood at all!',
+          'False - the banana plant is the world\'s largest herb. Its "trunk" is rolled-up leaves, not wood.')},
+  {q:'Are bats blind?',
+   bit:'Blind as a bat - it is literally the saying!',conf:80,truth:false,
+   fact:T('Bats can see fine! Echolocation is a BONUS superpower, not a fix for bad eyes. A saying fooled me!',
+          'False - every bat species can see. A catchy phrase overrode the facts - sayings are not data.')},
+  {q:'Does lightning never strike the same place twice?',
+   bit:'Never! Lightning remembers where it has been!',conf:75,truth:false,
+   fact:T('Lightning LOVES tall spots - the Empire State Building gets hit about 25 times a year!',
+          'False - tall structures are struck again and again. Confident and wrong, as usual.')}
+];
+function lesson4(){if(S.p4.done){mmDone();return;}mmIntro();}
+function mmIntro(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🏔️ Mistake Mountain</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:120,expr:'happy'})}</div>
+      <div class="speech">Welcome to my quiz show, ${esc(S.profile.name)}! I know EVERYTHING. Watch my confidence meter! 🎤</div>
+      <div class="card center">
+        <h2>How to play</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          '1️⃣ I answer a question<br>2️⃣ My confidence meter shows how SURE I am<br>3️⃣ You choose: believe me, or CHECK the answer!<br>4️⃣ Catching my mistakes earns stars ⭐',
+          '1️⃣ I answer each question and show my confidence<br>2️⃣ You decide: trust me, or verify<br>3️⃣ Catching a confident wrong answer earns a star<br>4️⃣ Watch my meter closely. It might be lying to you.')}</p>
+        <button class="btn orange" id="mm-go">Start the quiz! 🏔️</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('mm-go').onclick=()=>mmRound(0,0,[]);
+    });
+}
+function mmRound(idx,score,log){
+  if(idx>=MM.length){mmEnd(score,log);return;}
+  const c=MM[idx];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🏔️ Question ${idx+1} of ${MM.length}</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:90,expr:'happy'})}</div>
+      <div class="speech">${c.bit}</div>
+      <div class="card">
+        <h2 class="center" style="font-size:19px">${c.q}</h2>
+        <div class="conf-wrap">
+          <div class="conf-label"><span>Bit's confidence</span><span>${c.conf}%</span></div>
+          <div class="conf-bar"><div class="conf-fill" id="cf"></div></div>
+        </div>
+        <div class="bin-row">
+          <div class="bin fruit" id="trust">🤝 I believe you!</div>
+          <div class="bin not" id="check">🔍 Let me check!</div>
+        </div>
+        <div id="reveal"></div>
+      </div>
+      <div class="score-line center" style="color:#fff">Stars: ${score} ⭐</div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      setTimeout(()=>{const cf=document.getElementById('cf');if(cf)cf.style.width=c.conf+'%';},60);
+      const decide=(checked)=>{
+        const caught=checked&&!c.truth;
+        const smart=!checked&&c.truth;
+        if(caught||smart)score++;
+        log.push({conf:c.conf,wrong:!c.truth});
+        document.getElementById('trust').style.display='none';
+        document.getElementById('check').style.display='none';
+        const r=document.getElementById('reveal');
+        let head;
+        if(caught)head=`<div class="score-line" style="color:var(--green)">⭐ Caught me! I was WRONG - great checking!</div>`;
+        else if(checked)head=`<div class="score-line" style="color:var(--orange)">Good instinct to check - and I was right this time!</div>`;
+        else if(smart)head=`<div class="score-line" style="color:var(--green)">✅ Correct - I really did know that one!</div>`;
+        else head=`<div class="score-line" style="color:var(--red)">😬 Oh no - I was WRONG and you believed me!</div>`;
+        r.innerHTML=head+`
+          <p style="font-weight:600;margin-top:8px"><b>The truth:</b> ${c.fact}</p>
+          <button class="btn teal" id="mm-next">${idx+1<MM.length?'Next question':'See the big reveal!'}</button>`;
+        earnCard('verify');
+        document.getElementById('mm-next').onclick=()=>mmRound(idx+1,score,log);
+      };
+      document.getElementById('trust').onclick=()=>decide(false);
+      document.getElementById('check').onclick=()=>decide(true);
+    });
+}
+function mmEnd(score,log){
+  S.p4.done=true;earnCard('overconfidence');earnUpgrade('cape');save();
+  const wrongHigh=log.filter(l=>l.wrong&&l.conf>=75).length;
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🏔️ The big reveal</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-wiggle">${bitSVG({size:120,expr:'dizzy'})}</div>
+      <div class="speech">${score} stars, detective ${esc(S.profile.name)}! Now... look at my confidence meter's report card:</div>
+      <div class="card center">
+        <h2>My meter LIED 🤥</h2>
+        <div class="stat-grid">
+          <div class="stat"><div class="v">${log.filter(l=>l.wrong).length} / ${log.length}</div><div class="l">Times I was wrong</div></div>
+          <div class="stat"><div class="v">${wrongHigh}</div><div class="l">Wrong with 75%+ confidence</div></div>
+        </div>
+        <p style="font-size:16px;font-weight:600;margin-top:12px">${T(
+          'My confidence was almost always HIGH - even when I was totally wrong! A confidence number is just a guess about a guess. For anything important - homework, news, health - always check a source you trust!',
+          'Here is the lesson real AI labs wrestle with: my confidence score is computed from the same data my answer was - so it inherits all the same blind spots. High confidence is not evidence. For anything that matters, verify against a trusted source.')}</p>
+        <div class="pill">New card: 🎢 Confidence ≠ Correct</div><br>
+        <div class="pill">New card: 🔍 Trust, But Verify</div><br>
+        <div class="pill">Bit upgrade: 🦸 Hero cape!</div>
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+}
+function mmDone(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🏔️ Mistake Mountain</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110})}</div>
+      <div class="speech">You already taught me that confident isn't the same as correct! Want to quiz me again?</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Quiz again! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>mmRound(0,0,[]);
+    });
+}
+/* ================= LESSON 5: DEEPFAKE VOLCANO (spot the edit) ================= */
+const DV=[
+  {name:'Beach photo',tiles:['🟨','🌊','🏖️','🌴','🦀'],weird:0,
+   clue:'A SQUARE sun?! Real suns are round - someone edited this photo!',
+   why:T('The square sun gave it away. Real fake photos hide clues like this - weird shapes, odd shadows, blurry edges.',
+         'An impossible detail - a square sun. Real image edits leak clues: warped edges, repeated textures, lighting that doesn\'t match.')},
+  {name:'Farm photo',tiles:['☀️','☁️','🐄','🌳','🚜'],weird:-1,
+   clue:'Everything here is normal - cows moo, clouds float, tractors plow. A real photo!',
+   why:T('No clues anywhere. Not every photo is fake - the trick is checking instead of guessing!',
+         'Nothing impossible here. Healthy doubt means checking, not assuming everything is fake.')},
+  {name:'Snow photo',tiles:['🏔️','⛄','🌴','❄️','🧤'],weird:2,
+   clue:'A PALM TREE in the snow? Palm trees need hot sunshine - edited!',
+   why:T('A palm tree in a blizzard is impossible. Ask: does everything in this picture belong together?',
+         'Context mismatch - palms don\'t grow in snow. Deepfakes often fail on context, not pixels.')},
+  {name:'Park photo',tiles:['🌳','🐕','🌷','🦆','🌞'],weird:-1,
+   clue:'A dog, flowers, a duck in the pond - all perfectly normal. Real!',
+   why:T('All normal! Being a detective means looking carefully, then deciding.',
+         'Consistent scene, consistent lighting. Verification includes confirming what\'s real.')},
+  {name:'Sky photo',tiles:['☁️','🐟','☁️','🦅','🎈'],weird:1,
+   clue:'A FISH flying in the sky?! Fish live in water. Total fake!',
+   why:T('Fish don\'t fly. If one impossible thing appears, the photo has been tampered with.',
+         'One impossible object = tampered. AI fakes often get physics wrong.')},
+  {name:'City photo',tiles:['🏙️','🚗','🚦','🐠','🚲'],weird:3,
+   clue:'A fish swimming through city traffic? Nope - edited!',
+   why:T('Ocean creatures don\'t commute. Mischief Monkey strikes again!',
+         'Another impossible object. When media makes you feel shocked, check before you share it.')}
+];
+function lesson5(){if(S.p5.done){dvDone();return;}dvIntro();}
+function dvIntro(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌋 Deepfake Volcano</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:120,expr:'wow'})}</div>
+      <div class="speech">${esc(S.profile.name)}! Disaster! The Mischief Monkey 🐒 snuck into my camera roll and EDITED some of my photos!</div>
+      <div class="card center">
+        <span class="big-emoji">📸</span>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          'Some of my photos are REAL and some are TRICKS. Look closely at each one and tap REAL or TRICK! Find the clues - anything impossible or out of place!',
+          'Some photos are real, some were edited. Real fakes (and AI deepfakes) work exactly like this: mostly normal, one impossible detail. Your job: find it. And remember the golden question - who made this, and why?')}</p>
+        <button class="btn pink" id="dv-go">Inspect the photos! 🔍</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('dv-go').onclick=()=>dvRound(0,0);
+    });
+}
+function dvRound(idx,score){
+  if(idx>=DV.length){dvEnd(score);return;}
+  const c=DV[idx];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌋 Photo ${idx+1} of ${DV.length}</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:80,expr:'think'})}</div>
+      <div class="speech">From my camera roll: "${c.name}". Real or trick?</div>
+      <div class="card center">
+        <div class="photo" id="photo">${c.tiles.map(t=>`<span class="pe">${t}</span>`).join('')}</div>
+        <div class="bin-row">
+          <div class="bin fruit" id="real">📷 REAL photo</div>
+          <div class="bin not" id="trick">🐒 TRICK!</div>
+        </div>
+        <div id="dv-verdict"></div>
+      </div>
+      <div class="score-line center" style="color:#fff">Score: ${score} ⭐</div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      const answer=(saidTrick)=>{
+        const isTrick=c.weird>=0;
+        const right=saidTrick===isTrick;
+        if(right){score++;earnCard('healthy-doubt');}
+        document.getElementById('real').style.display='none';
+        document.getElementById('trick').style.display='none';
+        if(isTrick){
+          const pes=document.querySelectorAll('#photo .pe');
+          if(pes[c.weird])pes[c.weird].classList.add('weird');
+        }
+        document.getElementById('dv-verdict').innerHTML=`
+          <div class="score-line" style="color:${right?'var(--green)':'var(--red)'}">${right?'✅ Sharp eyes!':'❌ The monkey got you!'}</div>
+          <p style="font-weight:700;margin-top:8px">${isTrick?c.clue:c.clue}</p>
+          <p style="font-weight:600;margin-top:6px;font-size:14px" class="muted">${c.why}</p>
+          <button class="btn teal" id="dv-next">${idx+1<DV.length?'Next photo':'Finish the climb!'}</button>`;
+        document.getElementById('dv-next').onclick=()=>dvRound(idx+1,score);
+      };
+      document.getElementById('real').onclick=()=>answer(false);
+      document.getElementById('trick').onclick=()=>answer(true);
+    });
+}
+function dvEnd(score){
+  S.p5.done=true;S.p5.best=Math.max(S.p5.best||0,score);
+  earnCard('deepfakes');earnUpgrade('crown');
+  const master=S.p1.done&&S.p2.done&&S.p3.done&&S.p4.done;
+  if(master)earnCard('ai-master');
+  save();
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🌋 Volcano climbed!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-bounce">${bitSVG({size:130,expr:'wow'})}</div>
+      <div class="speech">${score} of ${DV.length} fakes caught, detective ${esc(S.profile.name)}!</div>
+      <div class="card center">
+        <span class="big-emoji">🏆</span>
+        <h2 style="margin-top:6px">Deepfake Volcano complete!</h2>
+        <p style="font-weight:600;margin-top:8px">${T(
+          'You spotted the monkey\'s tricks! Remember: photos and videos CAN be faked - sometimes by AI. If something online looks shocking or too perfect, check who made it before you believe or share it!',
+          'You just learned the core defense against deepfakes and edited media: mostly-normal content with impossible details, and a golden question - who made this, and what do they want me to feel? AI can now fake faces, voices and video. Check sources before you believe or share.')}</p>
+        <div class="pill">New card: 🌋 Fake Photos & Deepfakes</div><br>
+        <div class="pill">New card: 🧐 Healthy Doubt</div><br>
+        <div class="pill">Bit upgrade: 👑 Master crown!</div>
+        ${master?'<br><div class="pill" style="background:#FFF3BF;color:#E67700">ALL 5 ISLANDS: 🌟 AI Master card!</div>':''}
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+}
+function dvDone(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌋 Deepfake Volcano</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110})}</div>
+      <div class="speech">Best score: ${S.p5.best||0} of ${DV.length}! The Mischief Monkey wants a rematch?</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Inspect again! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>dvRound(0,0);
+    });
+}
 /* ================= BRAIN BOOK ================= */
 const CARDS={
   'what-is-ai':{e:'🤖',t:'What is AI?',d:T('AI is when computers learn from examples instead of only following fixed rules.','AI = computers that learn patterns from examples, instead of only following hand-written rules.')},
@@ -784,7 +1068,12 @@ const CARDS={
   'fairness':{e:'⚖️',t:'Fairness',d:T('Unfair examples teach AI to be unfair. People must check!','Biased examples teach biased rules. Fair data and human checking are how we keep AI fair.')},
   'ai-everywhere':{e:'🌍',t:'AI All Around',d:T('AI hides in phones, maps, TVs and games. Now you can spot it!','Voice helpers, maps, recommendations, face unlock - AI\'s fingerprint is learning from examples.')},
   'detective':{e:'🕵️',t:'AI Detective',d:T('You can tell AI from not-AI in the real world. Superpower unlocked!','You can tell learning systems from fixed-rule machines in the real world.')},
-  'teacher':{e:'🎓',t:'Robot Teacher',d:T('You taught a robot from scratch - and fixed its brain when it learned wrong!','You trained a model, diagnosed its failure, and fixed it with better data. That\'s the whole job.')}
+  'teacher':{e:'🎓',t:'Robot Teacher',d:T('You taught a robot from scratch - and fixed its brain when it learned wrong!','You trained a model, diagnosed its failure, and fixed it with better data. That\'s the whole job.')},
+  'overconfidence':{e:'🎢',t:'Confidence is not Correct',d:T('AI can be VERY sure and VERY wrong at the same time. Confidence is just a guess about a guess!','A model\'s confidence inherits the blind spots of its training data. High confidence is not evidence.')},
+  'verify':{e:'🔍',t:'Trust, But Verify',d:T('For anything important, check a source you trust - even if the answer sounded super sure!','Important claims deserve an independent source - especially the confident ones.')},
+  'deepfakes':{e:'🌋',t:'Fake Photos & Deepfakes',d:T('Photos and videos can be edited - and AI can invent them. Look for impossible clues!','AI can fabricate faces, voices and video. Clues: impossible details, context mismatches, uncanny edges.')},
+  'healthy-doubt':{e:'🧐',t:'Healthy Doubt',d:T('Before you believe or share something shocking, ask: who made this, and why?','Before believing or sharing, ask who made it and what they want you to feel.')},
+  'ai-master':{e:'🌟',t:'AI Master',d:T('All five islands complete! You train AI, catch its mistakes, keep it fair, spot it in the wild, and check its confidence.','All five islands: training data, bias, AI-in-the-wild, calibrated trust and media skepticism. Complete.')}
 };
 function showBrainBook(){
   go(`
@@ -812,7 +1101,7 @@ function showBrainBook(){
 }
 /* ================= PARENT DASHBOARD ================= */
 function showParent(){
-  const done=[S.p1.done,S.p2.done,S.p3.done].filter(Boolean).length;
+  const done=[S.p1.done,S.p2.done,S.p3.done,S.p4.done,S.p5.done].filter(Boolean).length;
   const mins=Math.floor(S.playSeconds/60);
   const learned=[];
   if(S.cards.includes('what-is-ai'))learned.push('What AI is (and isn\'t) - computers learning from examples');
@@ -821,6 +1110,10 @@ function showParent(){
   if(S.cards.includes('mistakes'))learned.push('AI makes mistakes on things it hasn\'t seen - always double-check');
   if(S.cards.includes('fairness'))learned.push('Bias: unfair data teaches unfair rules, people must check');
   if(S.cards.includes('ai-everywhere'))learned.push('Spotting AI in the real world (and what is NOT AI)');
+  if(S.cards.includes('overconfidence'))learned.push('Confidence is not accuracy - high confidence can still be wrong');
+  if(S.cards.includes('verify'))learned.push('Verifying important answers against trusted sources');
+  if(S.cards.includes('deepfakes'))learned.push('Photos and videos can be edited or AI-faked - spotting the clues');
+  if(S.cards.includes('healthy-doubt'))learned.push('Healthy doubt: asking "who made this, and why?"');
   go(`
     <div class="screen on">
       <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🛡️ For Parents</div><span style="width:40px"></span></div>
@@ -828,7 +1121,7 @@ function showParent(){
         <h2>${esc(S.profile.name)}'s progress</h2>
         <span class="pill">Age band: ${S.profile.band==='A'?'6-8':'9-12'}</span>
         <div class="stat-grid">
-          <div class="stat"><div class="v">${done} / 3</div><div class="l">Islands completed</div></div>
+          <div class="stat"><div class="v">${done} / 5</div><div class="l">Islands completed</div></div>
           <div class="stat"><div class="v">${S.cards.length} / ${Object.keys(CARDS).length}</div><div class="l">Concept cards</div></div>
           <div class="stat"><div class="v">${mins} min</div><div class="l">Time playing</div></div>
           <div class="stat"><div class="v">${S.sessions}</div><div class="l">Sessions</div></div>
@@ -857,7 +1150,8 @@ function showParent(){
     });
 }
 /* ================= BOOT ================= */
-setInterval(()=>{if(S.profile){S.playSeconds++;if(S.playSeconds%10===0)save();}},1000);
+setInterval(()=>{if(S.profile&&!document.hidden){S.playSeconds++;if(S.playSeconds%10===0)save();}},1000);
+window.addEventListener('pagehide',()=>{try{save();}catch(e){}});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 if(S.profile){S.sessions++;save();showMap();}
 else showGate('setup');
