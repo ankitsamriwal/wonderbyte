@@ -742,7 +742,7 @@ function reefCard(idx,score,answers){
         </div>
         <div id="why"></div>
       </div>
-      <div class="score-line center" style="color:#fff">Score: ${score} ⭐</div>
+      <div class="score-line center" style="color:#fff" id="dv-score">Score: ${score} ⭐</div>
     </div>`,()=>{
       document.getElementById('back').onclick=showMap;
       const answer=(guess)=>{
@@ -865,14 +865,14 @@ function mmRound(idx,score,log){
         </div>
         <div id="reveal"></div>
       </div>
-      <div class="score-line center" style="color:#fff">Stars: ${score} ⭐</div>
+      <div class="score-line center" style="color:#fff" id="mm-score">Stars: ${score} ⭐</div>
     </div>`,()=>{
       document.getElementById('back').onclick=showMap;
       setTimeout(()=>{const cf=document.getElementById('cf');if(cf)cf.style.width=c.conf+'%';},60);
       const decide=(checked)=>{
         const caught=checked&&!c.truth;
         const smart=!checked&&c.truth;
-        if(caught||smart)score++;
+        if(caught||smart){score++;const ms=document.getElementById('mm-score');if(ms)ms.textContent='Stars: '+score+' ⭐';}
         log.push({conf:c.conf,wrong:!c.truth});
         document.getElementById('trust').style.display='none';
         document.getElementById('check').style.display='none';
@@ -1000,7 +1000,7 @@ function dvRound(idx,score){
       const answer=(saidTrick)=>{
         const isTrick=c.weird>=0;
         const right=saidTrick===isTrick;
-        if(right){score++;earnCard('healthy-doubt');}
+        if(right){score++;earnCard('healthy-doubt');const ds=document.getElementById('dv-score');if(ds)ds.textContent='Score: '+score+' ⭐';}
         document.getElementById('real').style.display='none';
         document.getElementById('trick').style.display='none';
         if(isTrick){
