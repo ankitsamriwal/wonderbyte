@@ -157,6 +157,10 @@ input[type=text]:focus{border-color:var(--purple)}
 .photo .pe{font-size:42px;line-height:1}
 .photo .weird{outline:4px dashed var(--red);border-radius:12px;background:rgba(255,107,107,.18);animation:wiggle .5s ease 2}
 .verdict-tag{font-size:15px;font-weight:800;margin-top:10px}
+.bit-dance{animation:dance .8s ease-in-out 3}
+@keyframes dance{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-8deg) translateY(-10px)}50%{transform:rotate(8deg) translateY(0)}75%{transform:rotate(-6deg) translateY(-8px)}}
+.riddle{background:#FFF9DB;border:4px solid var(--yellow)}
+.riddle .badge{background:var(--orange)}
 @media (prefers-reduced-motion:reduce){.bit-float,.bit-bounce,.bit-wiggle,.screen,.confetti{animation:none!important}}
 </style>
 </head>
@@ -168,7 +172,7 @@ input[type=text]:focus{border-color:var(--purple)}
 const SAVE_KEY='wonderbyte_v1';
 const DEFAULT_STATE={
   profile:null, // {name,band:'A'|'B',color}
-  p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0}, p4:{done:false}, p5:{done:false,best:0},
+  p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0}, p4:{done:false}, p5:{done:false,best:0}, p6:{done:false}, p7:{done:false}, sound:true, daily:{date:'',done:false}, riddles:0,
   cards:[], upgrades:[],
   playSeconds:0, sessions:0, breakShownAt:0
 };
@@ -189,6 +193,8 @@ function bitSVG(opts){
   if(u.includes('badge'))extras+='<path d="M60 78 l4 7 8 1-6 6 2 8-8-4-8 4 2-8-6-6 8-1z" fill="#FFD93D" stroke="#FFA502" stroke-width="1.5"/>';
   if(u.includes('boots'))extras+='<ellipse cx="42" cy="118" rx="12" ry="7" fill="#FF9F43"/><ellipse cx="78" cy="118" rx="12" ry="7" fill="#FF9F43"/><path d="M38 118 l-4 8 M46 118 l4 8 M74 118 l-4 8 M82 118 l4 8" stroke="#FFD93D" stroke-width="3" stroke-linecap="round"/>';
   if(u.includes('cape'))extras+='<path d="M28 76 Q60 92 92 76 L86 120 Q60 130 34 120 Z" fill="#FF6B6B" opacity=".92"/>';
+  if(u.includes('scarf'))extras+='<path d="M30 74 Q60 84 90 74 L90 84 Q60 94 30 84 Z" fill="#00CEC9"/><path d="M78 80 L88 108 L78 112 L70 86 Z" fill="#00CEC9"/><path d="M78 80 L88 108 L78 112 L70 86 Z" fill="none" stroke="#00a8a4" stroke-width="2"/>';
+  if(u.includes('jetpack'))extras+='<rect x="8" y="62" width="16" height="34" rx="8" fill="#576574"/><rect x="96" y="62" width="16" height="34" rx="8" fill="#576574"/><circle cx="16" cy="60" r="6" fill="#FFD93D"/><circle cx="104" cy="60" r="6" fill="#FFD93D"/><path d="M12 96 q4 10 8 0 M100 96 q4 10 8 0" stroke="#FF9F43" stroke-width="4" fill="none" stroke-linecap="round"/>';
   if(u.includes('crown'))extras+='<path d="M38 22 L46 6 L56 19 L64 4 L74 19 L82 6 L84 22 Z" fill="#FFD93D" stroke="#FFA502" stroke-width="2" stroke-linejoin="round"/><circle cx="64" cy="12" r="3" fill="#FF6B9D"/>';
   let mouth='<path d="M48 56 Q60 66 72 56" stroke="#2D3436" stroke-width="4" fill="none" stroke-linecap="round"/>';
   let eyes='<circle cx="45" cy="44" r="7" fill="#2D3436"/><circle cx="75" cy="44" r="7" fill="#2D3436"/><circle cx="47" cy="42" r="2.5" fill="#fff"/><circle cx="77" cy="42" r="2.5" fill="#fff"/>';
@@ -208,6 +214,7 @@ function bitSVG(opts){
   '</svg>';
 }
 function confetti(){
+  sfx('win');
   const em=['🎉','⭐','🌈','💜','✨','🎊','🤖'];
   for(let i=0;i<26;i++){
     const d=document.createElement('div');d.className='confetti';
@@ -217,6 +224,29 @@ function confetti(){
     d.style.fontSize=(18+Math.random()*20)+'px';
     document.body.appendChild(d);setTimeout(()=>d.remove(),3400);
   }
+}
+/* ================= SFX (tiny WebAudio, no assets) ================= */
+let AC=null;
+function tone(f,d,type,vol,delay){
+  const t0=AC.currentTime+(delay||0);
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type||'sine';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(vol||0.12,t0+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+d);
+  o.connect(g);g.connect(AC.destination);o.start(t0);o.stop(t0+d+0.05);
+}
+function sfx(kind){
+  if(S.sound===false)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended')AC.resume();
+    if(kind==='tap'){tone(660,0.08,'triangle',0.08);}
+    else if(kind==='good'){tone(523,0.12,'triangle',0.12);tone(784,0.16,'triangle',0.12,0.09);}
+    else if(kind==='bad'){tone(196,0.25,'sawtooth',0.07);tone(155,0.3,'sawtooth',0.06,0.08);}
+    else if(kind==='win'){tone(523,0.14,'triangle',0.12);tone(659,0.14,'triangle',0.12,0.12);tone(784,0.14,'triangle',0.12,0.24);tone(1047,0.3,'triangle',0.14,0.36);}
+    else if(kind==='boing'){tone(300,0.08,'square',0.06);tone(500,0.1,'square',0.06,0.07);tone(300,0.12,'square',0.05,0.15);}
+  }catch(e){}
 }
 /* ================= ROUTER ================= */
 let timers=[];
@@ -327,6 +357,8 @@ function islands(){
     {id:'i3',scene:'🤿',name:'Robot Reef',desc:T('AI or not? You decide!','Dive in and sort AI from not-AI in the real world.'),state:S.p2.done?(S.p3.done?'done':'next'):'lock',locked:!S.p2.done},
     {id:'i4',scene:'🏔️',name:'Mistake Mountain',desc:T('I answer everything SUPER confidently. Should you always believe me?','I answer with total confidence - even when I am wrong. Can you catch me?'),state:S.p3.done?(S.p4.done?'done':'next'):'lock',locked:!S.p3.done},
     {id:'i5',scene:'🌋',name:'Deepfake Volcano',desc:T('The Mischief Monkey edited my photos! Spot the fakes!','Some of my photos were secretly edited. Real or fake - you decide.'),state:S.p4.done?(S.p5.done?'done':'next'):'lock',locked:!S.p4.done},
+    {id:'i6',scene:'⚓',name:'Prompt Port',desc:T('Boss me around! Better instructions = better results.','Give me instructions. Watch how much the wording matters.'),state:S.p5.done?(S.p6.done?'done':'next'):'lock',locked:!S.p5.done},
+    {id:'i7',scene:'🌳',name:'Generative Grove',desc:T('Mix two creatures and I will invent a new one!','Pick two creatures - I remix them into something new, exactly how generative AI works.'),state:S.p6.done?(S.p7.done?'done':'next'):'lock',locked:!S.p6.done},
   ];
 }
 function mapSpeech(){
@@ -334,7 +366,9 @@ function mapSpeech(){
   if(!S.p2.done)return 'You taught me SO well! Next: Fairness Falls. Something feels... off there. ⚖️';
   if(!S.p3.done)return 'Fair play! Now let\'s dive to Robot Reef - can YOU spot AI in the wild? 🤿';
   if(!S.p4.done)return 'You can spot AI anywhere! Next: Mistake Mountain. I answer EVERYTHING there - very confidently. Should you always believe me? 🏔️';
-  if(!S.p5.done)return 'Sherlock-level checking! Last island: Deepfake Volcano - the Mischief Monkey messed with my photos. Spot the fakes! 🌋';
+  if(!S.p5.done)return 'Sherlock-level checking! Next: Deepfake Volcano - the Mischief Monkey messed with my photos. Spot the fakes! 🌋';
+  if(!S.p6.done)return 'Fake-spotter extraordinaire! Now sail to Prompt Port - you get to boss ME around. Choose my instructions wisely! ⚓';
+  if(!S.p7.done)return 'Captain Prompt! One last trip: Generative Grove, where I invent brand-new creatures. Sort of. 🌳';
   return 'You taught me everything I know, '+esc(S.profile.name)+'! Official AI Master! 🌟';
 }
 function showMap(){
@@ -344,13 +378,15 @@ function showMap(){
       <div class="topbar">
         <div class="who">🗺️ ${esc(S.profile.name)}'s World</div>
         <div class="row" style="flex:0 0 auto">
+          <button class="icon-btn" id="map-sound" title="Sound">${S.sound===false?'🔇':'🔊'}</button>
           <button class="icon-btn" id="map-book" title="Brain Book">📖</button>
           <button class="icon-btn" id="map-parent" title="For parents">🛡️</button>
         </div>
       </div>
-      <div class="bit-wrap bit-float">${bitSVG({size:110})}</div>
+      <div class="bit-wrap bit-float" id="map-bit" style="cursor:pointer" title="Tap me!">${bitSVG({size:110})}</div>
       <div class="speech">${mapSpeech()}</div>
       <div id="break-slot"></div>
+      <div id="riddle-slot"></div>
       ${isl.map(i=>`
         <div class="island ${i.locked?'locked':''} ${i.state==='next'?'next':''}" data-i="${i.id}">
           <div class="scene">${i.scene}</div>
@@ -361,6 +397,9 @@ function showMap(){
     </div>`,()=>{
       document.getElementById('map-book').onclick=showBrainBook;
       document.getElementById('map-parent').onclick=()=>showGate('parent');
+      document.getElementById('map-sound').onclick=()=>{S.sound=!(S.sound===false);save();document.getElementById('map-sound').textContent=S.sound?'🔊':'🔇';sfx('tap');};
+      document.getElementById('map-bit').onclick=bitHello;
+      showDailyRiddle();
       document.querySelectorAll('.island').forEach(el=>el.onclick=()=>{
         const id=el.dataset.i;
         if(el.classList.contains('locked')){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),500);return;}
@@ -369,6 +408,8 @@ function showMap(){
         if(id==='i3')lesson3();
         if(id==='i4')lesson4();
         if(id==='i5')lesson5();
+        if(id==='i6')lesson6();
+        if(id==='i7')lesson7();
       });
       maybeBreakNudge();
     });
@@ -532,6 +573,7 @@ function l1Test(ids,idx,results,phase,labeled){
         results.push({id:id,bit:guess,truth:it.fruit,correct:correct,confused:!!p.confused});
         const bs=document.getElementById('bit-slot'),sp=document.getElementById('sp'),v=document.getElementById('verdict');
         document.getElementById('ask').style.display='none';
+        setTimeout(()=>sfx(correct?'good':'bad'),1300);
         if(p.confused){bs.innerHTML=bitSVG({size:110,expr:'dizzy'});sp.innerHTML=`Uhhh... my brain says... <b>NOT fruit</b>? I think? 🥴`;}
         else{sp.innerHTML=`Bit says: <b>${guess?'🍏 FRUIT!':'🧦 NOT FRUIT!'}</b>`;}
         setTimeout(()=>{
@@ -575,7 +617,7 @@ function l1Results(results,phase,labeled){
     go(`
     <div class="screen on">
       <div class="topbar"><span style="width:40px"></span><div class="who">🎉 You did it!</div><span style="width:40px"></span></div>
-      <div class="bit-wrap bit-bounce">${bitSVG({size:140,expr:'wow'})}</div>
+      <div class="bit-wrap bit-dance">${bitSVG({size:140,expr:'wow'})}</div>
       <div class="speech">${ok} of ${results.length} correct! You fixed my brain, ${esc(S.profile.name)}!</div>
       <div class="card center">
         <span class="big-emoji">🏆</span>
@@ -747,7 +789,7 @@ function reefCard(idx,score,answers){
       document.getElementById('back').onclick=showMap;
       const answer=(guess)=>{
         const right=guess===c.ai;
-        if(right){score++;earnCard('ai-everywhere');}
+        if(right){score++;earnCard('ai-everywhere');sfx('good');}else sfx('bad');
         const why=document.getElementById('why');
         document.getElementById('is-ai').style.display='none';
         document.getElementById('not-ai').style.display='none';
@@ -1059,6 +1101,369 @@ function dvDone(){
       document.getElementById('replay').onclick=()=>dvRound(0,0);
     });
 }
+
+/* ================= BIT EASTER EGGS ================= */
+const BIT_QUIPS=[
+  {e:'wow',t:'Beep boop! That tickles! 😄'},
+  {e:'happy',t:'Did you know robots dream in code? 💭'},
+  {e:'dizzy',t:'Woooah... stop poking my gyroscope! 🌀'},
+  {e:'think',t:'Hmm... computing how awesome you are... result: VERY. ⭐'},
+  {e:'wow',t:'🎵 Domo arigato, I am a roboto 🎵'},
+  {e:'happy',t:'I just did a backup. My memories of you are EXTRA safe! 💾'},
+  {e:'dizzy',t:'Error 404: seriousness not found! 🤪'},
+  {e:'think',t:'My favorite number is 2. Everything about me is 2s and 0s... wait.'}
+];
+let quipIdx=0;
+function bitHello(){
+  const q=BIT_QUIPS[quipIdx%BIT_QUIPS.length];quipIdx++;
+  const bw=document.getElementById('map-bit');
+  if(!bw)return;
+  sfx('boing');
+  bw.innerHTML=bitSVG({size:110,expr:q.e});
+  bw.classList.remove('bit-float');bw.classList.add('bit-wiggle');
+  const sp=document.querySelector('.speech');
+  if(sp)sp.textContent=q.t;
+  setTimeout(()=>{if(document.getElementById('map-bit')){bw.innerHTML=bitSVG({size:110});bw.classList.add('bit-float');bw.classList.remove('bit-wiggle');}},1600);
+}
+/* ================= DAILY RIDDLE ================= */
+const RIDDLES=[
+  {q:'A spam filter that learns which emails are junk. AI or not?',opts:['🤖 AI','🙅 Not AI'],a:0,why:T('It learns from examples of spam!','It learns from millions of example emails. Learning from examples = AI.')},
+  {q:'Bit says: "I am 99% sure penguins can fly!" What should you do?',opts:['🤝 Believe him','🔍 Check it'],a:1,why:T('Penguins CAN\'T fly - high confidence, totally wrong. Always check!','Penguins are flightless. Confidence is not evidence - verify.')},
+  {q:'A photo shows a dog driving a school bus. Real or trick?',opts:['📷 Real','🐒 Trick'],a:1,why:T('Dogs can\'t drive buses! One impossible thing = edited.','An impossible detail gives the edit away. Ask who made it and why.')},
+  {q:'A calculator that always gets math right. AI or not?',opts:['🤖 AI','🙅 Not AI'],a:1,why:T('It follows fixed rules and never learns. Not AI!','Fixed rules, zero learning. Not AI.')},
+  {q:'Which instruction gets a better drawing?',opts:['"Draw an animal"','"Draw a fluffy cat with big green eyes, cartoon style"'],a:1,why:T('Specific instructions = better results!','Specific prompts (what, style, details) get far better results.')},
+  {q:'Bit only ever saw RED apples. What will he call a GREEN apple?',opts:['🍏 An apple','🤷 Probably not an apple'],a:1,why:T('One-sided examples teach wrong rules - like "apples are red"!','One-sided training data teaches wrong rules. Diverse examples fix it.')},
+  {q:'A phone that unlocks when it sees your face. AI or not?',opts:['🤖 AI','🙅 Not AI'],a:0,why:T('It learned your face from examples - AI!','It learned to recognize your face from examples. AI.')},
+  {q:'A shocking video of a celebrity appears online. First move?',opts:['📤 Share it fast','🔍 Check the source'],a:1,why:T('Check WHO posted it and if trusted sources report it too!','Shocking media is exactly what fakers make. Verify before sharing.')},
+  {q:'AI picks players only from old photos of red-shirt teams. Fair?',opts:['⚖️ Fair','🚫 Not fair'],a:1,why:T('Unfair examples = unfair picks. That\'s bias!','Biased training data produces biased picks. People must check.')},
+  {q:'Can AI be super confident AND super wrong at the same time?',opts:['✅ Yes','❌ No'],a:0,why:T('Absolutely - you saw it on Mistake Mountain!','Yes - confidence comes from the same data as the answer, blind spots included.')}
+];
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function dayOfYear(){const d=new Date();return Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);}
+function showDailyRiddle(){
+  const slot=document.getElementById('riddle-slot');
+  if(!slot||!S.daily)return;
+  if(S.daily.date===todayStr()&&S.daily.done)return;
+  const r=RIDDLES[dayOfYear()%RIDDLES.length];
+  slot.innerHTML=`<div class="island riddle" id="riddle-open">
+    <div class="scene">🌞</div>
+    <div class="meta"><h3>Bit's Daily Riddle</h3><p>${r.q.length>60?r.q.slice(0,57)+'...':r.q}</p></div>
+    <span class="badge next">NEW!</span>
+  </div>`;
+  document.getElementById('riddle-open').onclick=()=>playRiddle(r);
+}
+function playRiddle(r){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌞 Daily Riddle</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:110,expr:'think'})}</div>
+      <div class="speech">One riddle a day keeps the robot... okay I don't know how that ends. Here it is!</div>
+      <div class="card center">
+        <h2 style="font-size:19px">${r.q}</h2>
+        <div class="choices">
+          ${r.opts.map((o,i)=>`<div class="choice" data-i="${i}">${o}</div>`).join('')}
+        </div>
+        <div id="rid-why"></div>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.querySelectorAll('.choice').forEach(ch=>ch.onclick=()=>{
+        const pick=parseInt(ch.dataset.i,10);
+        const right=pick===r.a;
+        document.querySelectorAll('.choice').forEach(x=>x.style.pointerEvents='none');
+        ch.classList.add('sel');
+        if(right){S.riddles=(S.riddles||0)+1;sfx('good');}else sfx('bad');
+        document.getElementById('rid-why').innerHTML=`
+          <div class="score-line" style="color:${right?'var(--green)':'var(--red)'}">${right?'✅ Correct!':'❌ Not quite!'}</div>
+          <p style="font-weight:600;margin-top:6px">${r.why}</p>
+          <button class="btn teal" id="rid-done">Back to the map 🗺️</button>`;
+        S.daily={date:todayStr(),done:true};save();
+        document.getElementById('rid-done').onclick=showMap;
+      });
+    });
+}
+/* ================= LESSON 6: PROMPT PORT ================= */
+const PP=[
+  {task:'I want to draw you a picture! What should I draw?',icon:'🎨',
+   opts:[
+     {p:'"Draw something."',stars:0,result:'Here you go: a potato. 🥔 You said SOMETHING!',line:'Technically correct - the worst kind of correct.'},
+     {p:'"Draw a cat."',stars:1,result:'One cat coming up! 🐱 It has... whiskers? I think those are whiskers. And only three legs, because you didn\'t say four.',line:'Better! But I guessed a lot of details myself.'},
+     {p:'"Draw a fluffy orange cat with big green eyes, sitting, cartoon style."',stars:2,result:'TA-DA! 🐱✨ Fluffy! Orange! Green eyes! Sitting! Cartoon style! My best work ever!',line:'PERFECT instructions = perfect picture!'}],
+   teach:T('I follow instructions VERY literally. Vague instructions = I guess. Specific instructions = exactly what you wanted!',
+           'I execute instructions literally. Vague prompts force me to guess; specifics (subject, details, style) pin down what you actually want.')},
+  {task:'Tell me a joke!',icon:'😂',
+   opts:[
+     {p:'"Say something funny."',stars:0,result:'Something funny. ...I said it. That\'s what you asked for. 😐',line:'Literal machine strikes again.'},
+     {p:'"Tell a joke about animals."',stars:1,result:'Why did the cow cross the road? ...To get to the other side? 🐄 I tried my best.',line:'Okay-ish. The topic helped, but no style or audience.'},
+     {p:'"Tell a silly joke about a dog who thinks he is a mailman, for a 7-year-old."',stars:2,result:'Why did the dog become a mailman? Because he heard the job comes with unlimited "bark-ing" routes! 📮🐕',line:'Topic + character + audience = a joke that actually lands!'}],
+   teach:T('Tell me WHO it\'s for and WHAT style, and I do so much better!',
+           'Audience, character and tone in the prompt = output that actually fits the goal.')},
+  {task:'Help me explain rain to my little cousin!',icon:'🌧️',
+   opts:[
+     {p:'"Explain rain."',stars:0,result:'Rain is water. It falls. From the sky. 📖 The end.',line:'True! Useless!'},
+     {p:'"Explain why it rains."',stars:1,result:'Water evaporates, forms clouds, and falls when the drops get heavy. ☁️',line:'Correct science - but for whom? A 5-year-old is lost.'},
+     {p:'"Explain why it rains to a 5-year-old, using a teapot example, in three short sentences."',stars:2,result:'You know how a teapot makes steam? 💨 The sun does that to the sea! The steam goes up, makes fluffy clouds, and when the clouds get too full - plip plop - rain! ☔',line:'Audience + example + length = perfect explanation!'}],
+   teach:T('Magic words: who is it FOR, what STYLE, and HOW LONG.',
+           'Audience, framing example and length constraints turn a correct answer into a useful one.')},
+  {task:'Plan my birthday party!',icon:'🎂',
+   opts:[
+     {p:'"Plan a party."',stars:0,result:'Step 1: have a party. Step 2: enjoy the party. 🎉 You\'re welcome.',line:'A plan that plans nothing.'},
+     {p:'"Plan a fun birthday party with games and cake."',stars:1,result:'Musical chairs! Cake! Balloons! 🎈 Solid party. Could be anyone\'s though.',line:'Good bones - but whose party is it?'},
+     {p:'"Plan a 2-hour dinosaur-themed birthday for 8 kids with 2 games, snacks, and a cake moment."',stars:2,result:'🦖 ROAR! Dino-egg hunt (0:00-0:30), fossil dig in the sandbox (0:30-1:00), dino nuggets (1:00-1:30), volcano cake eruption (1:30-2:00)! Best. Party. Ever.',line:'Theme + headcount + time + must-haves = a REAL plan!'}],
+   teach:T('Give me the details that matter - theme, how many kids, how long - and watch me shine!',
+           'Constraints are gifts: theme, guests, duration and must-haves turn a generic plan into YOUR plan.')}
+];
+function lesson6(){if(S.p6.done){ppDone();return;}ppIntro();}
+function ppIntro(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">⚓ Prompt Port</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:120,expr:'happy'})}</div>
+      <div class="speech">Ahoy, Captain ${esc(S.profile.name)}! ⚓ In this port, YOU give the orders and I follow them EXACTLY. Maybe too exactly...</div>
+      <div class="card center">
+        <h2>How to play</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          '1️⃣ I need instructions for a job<br>2️⃣ Pick the BEST instruction from three<br>3️⃣ Watch what I do with it - I follow words LITERALLY!<br>4️⃣ Better instructions = better results. You\'ll see! 😂',
+          '1️⃣ I get a task<br>2️⃣ You pick the strongest prompt from three options<br>3️⃣ I execute it LITERALLY - vague wording means I guess<br>4️⃣ Watch how much the wording changes the result.')}</p>
+        <button class="btn orange" id="pp-go">Set sail! ⛵</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('pp-go').onclick=()=>ppRound(0,0);
+    });
+}
+function ppRound(idx,score){
+  if(idx>=PP.length){ppEnd(score);return;}
+  const c=PP[idx];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">⚓ Task ${idx+1} of ${PP.length}</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:90,expr:'happy'})}</div>
+      <div class="speech">${c.task}</div>
+      <div class="card">
+        <h2 class="center">${c.icon} Pick my instructions!</h2>
+        <div class="choices" style="flex-direction:column">
+          ${c.opts.map((o,i)=>`<div class="choice" data-i="${i}" style="min-width:100%">${o.p}</div>`).join('')}
+        </div>
+        <div id="pp-result"></div>
+      </div>
+      <div class="score-line center" style="color:#fff" id="pp-score">Stars: ${score} ⭐</div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.querySelectorAll('.choice').forEach(ch=>ch.onclick=()=>{
+        const o=c.opts[parseInt(ch.dataset.i,10)];
+        document.querySelectorAll('.choice').forEach(x=>x.style.pointerEvents='none');
+        ch.classList.add('sel');
+        score+=o.stars;
+        if(o.stars===2)sfx('good');else if(o.stars===0)sfx('bad');else sfx('tap');
+        const ps=document.getElementById('pp-score');if(ps)ps.textContent='Stars: '+score+' ⭐';
+        const bit=document.querySelector('.bit-wrap');
+        bit.innerHTML=bitSVG({size:90,expr:o.stars===2?'wow':(o.stars===0?'dizzy':'think')});
+        document.getElementById('pp-result').innerHTML=`
+          <div class="score-line" style="color:${o.stars===2?'var(--green)':(o.stars===0?'var(--red)':'var(--orange)')}">${'⭐'.repeat(o.stars)||'💥'} ${o.stars===2?'PERFECT instructions!':(o.stars===1?'Not bad...':'Oh no.')}</div>
+          <p style="font-weight:700;margin-top:8px">Bit does it: ${o.result}</p>
+          <p style="font-weight:600;margin-top:6px;font-size:14px" class="muted">${o.line} - ${c.teach}</p>
+          <button class="btn teal" id="pp-next">${idx+1<PP.length?'Next task':'Dock the ship!'}</button>`;
+        if(o.stars===2)earnCard('prompt-power');
+        document.getElementById('pp-next').onclick=()=>ppRound(idx+1,score);
+      });
+    });
+}
+function ppEnd(score){
+  S.p6.done=true;earnCard('prompt-power');earnUpgrade('scarf');save();
+  const max=PP.length*2;
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">⚓ Port mastered!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-dance">${bitSVG({size:130,expr:'wow'})}</div>
+      <div class="speech">${score} of ${max} stars, Captain ${esc(S.profile.name)}!</div>
+      <div class="card center">
+        <span class="big-emoji">🏆</span>
+        <h2 style="margin-top:6px">Prompt Port complete!</h2>
+        <p style="font-weight:600;margin-top:8px">${T(
+          'You learned the captain\'s secret: I am a LITERAL machine. Tell me exactly what you want - who it\'s for, what style, what details - and I can do amazing things!',
+          'You learned the core skill of the AI age: models are literal machines. Specific prompts - audience, style, details, constraints - turn generic output into exactly what you wanted.')}</p>
+        <div class="pill">New card: 💬 Prompt Power</div><br>
+        <div class="pill">Bit upgrade: 🧣 Sailor scarf!</div>
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+}
+function ppDone(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">⚓ Prompt Port</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110})}</div>
+      <div class="speech">Aye aye, captain! Ready for new orders whenever you are!</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Sail again! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>ppRound(0,0);
+    });
+}
+/* ================= LESSON 7: GENERATIVE GROVE ================= */
+const GG_ANIMALS=[
+  {e:'🦁',n:'Lion'},{e:'🐙',n:'Octopus'},{e:'🦄',n:'Unicorn'},{e:'🐧',n:'Penguin'},
+  {e:'🐝',n:'Bee'},{e:'🐢',n:'Turtle'},{e:'🦉',n:'Owl'},{e:'🐬',n:'Dolphin'}
+];
+const GG_SPECIAL={
+  'Lion+Octopus':{n:'Octolion',j:'Eight tentacles AND a mane. Hugs you and roars at you at the same time.'},
+  'Octopus+Lion':{n:'Octolion',j:'Eight tentacles AND a mane. Hugs you and roars at you at the same time.'},
+  'Penguin+Bee':{n:'Bumbleguin',j:'A tiny penguin with wings. Buzzes around the iceberg, still cannot fly properly.'},
+  'Bee+Penguin':{n:'Bumbleguin',j:'A tiny penguin with wings. Buzzes around the iceberg, still cannot fly properly.'},
+  'Unicorn+Dolphin':{n:'Dolphicorn',j:'The most magical creature in the sea. Neighs in bubbles.'},
+  'Dolphin+Unicorn':{n:'Dolphicorn',j:'The most magical creature in the sea. Neighs in bubbles.'},
+  'Turtle+Owl':{n:'Hootle',j:'Wise AND slow. Gives you advice next Tuesday.'},
+  'Owl+Turtle':{n:'Hootle',j:'Wise AND slow. Gives you advice next Tuesday.'}
+};
+function ggMash(a,b){
+  const sp=GG_SPECIAL[a.n+'+'+b.n];
+  if(sp)return sp;
+  const n=a.n.slice(0,Math.ceil(a.n.length/2))+b.n.slice(Math.floor(b.n.length/2)).toLowerCase();
+  return {n:n.charAt(0).toUpperCase()+n.slice(1),j:'Half '+a.n.toLowerCase()+', half '+b.n.toLowerCase()+'. 100% ridiculous.'};
+}
+function lesson7(){if(S.p7.done){ggDone();return;}ggIntro();}
+function ggIntro(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌳 Generative Grove</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:120,expr:'wow'})}</div>
+      <div class="speech">Welcome to the Grove, ${esc(S.profile.name)}! Here I can INVENT new creatures! ...well, sort of. Pick two and watch!</div>
+      <div class="card center">
+        <h2>How to play</h2>
+        <p style="font-size:16px;font-weight:600;margin-top:8px">${T(
+          '1️⃣ Pick ANY two creatures<br>2️⃣ I smash their patterns together into a NEW creature!<br>3️⃣ Then I\'ll tell you the big secret about how AI "invents" things. 🤫',
+          '1️⃣ Pick any two creatures<br>2️⃣ I recombine their patterns into a new one<br>3️⃣ Then the reveal: this is exactly how generative AI "creates" - and why it never truly invents from nothing.')}</p>
+        <button class="btn green" id="gg-go">Grow a creature! 🌱</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('gg-go').onclick=()=>ggPick([]);
+    });
+}
+function ggPick(picked){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌳 Pick ${picked.length===0?'the FIRST':'the SECOND'} creature!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:80,expr:'happy'})}</div>
+      <div class="speech">${picked.length===0?'Who shall I mix? Choose one!':'Great! '+picked[0].e+' '+picked[0].n+'! Now pick its partner!'}</div>
+      <div class="brain-book-grid">
+        ${GG_ANIMALS.filter(a=>!picked.includes(a)).map(a=>`
+          <div class="item-card gg-a" data-n="${a.n}">
+            <span class="e">${a.e}</span><div class="n">${a.n}</div>
+          </div>`).join('')}
+      </div>
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.querySelectorAll('.gg-a').forEach(el=>el.onclick=()=>{
+        sfx('tap');
+        const a=GG_ANIMALS.find(x=>x.n===el.dataset.n);
+        picked.push(a);
+        if(picked.length<2)ggPick(picked);else ggMix(picked[0],picked[1]);
+      });
+    });
+}
+function ggMix(a,b){
+  const m=ggMash(a,b);
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🌳 Growing...</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-wiggle">${bitSVG({size:130,expr:'think'})}</div>
+      <div class="speech">Mixing ${a.e} and ${b.e}... whirrrr... beep...</div>
+      <div class="card center"><h2>🌱 Mixing patterns...</h2></div>
+    </div>`,()=>{
+      setTimeout(()=>{
+        sfx('good');
+        go(`
+        <div class="screen on">
+          <div class="topbar"><span style="width:40px"></span><div class="who">🌳 It's alive!</div><span style="width:40px"></span></div>
+          <div class="bit-wrap bit-bounce">${bitSVG({size:110,expr:'wow'})}</div>
+          <div class="speech">BEHOLD!</div>
+          <div class="card center">
+            <div style="font-size:64px">${a.e}✨${b.e}</div>
+            <h2>The ${m.n}!</h2>
+            <p style="font-weight:600;margin-top:6px">${m.j}</p>
+            <p class="muted" style="margin-top:10px">${T('How did I do it? I took patterns from creatures I already knew - and mixed them! That\'s how AI draws pictures and writes stories: remixing patterns it learned.','I recombined patterns from creatures in my training data. Generative AI works exactly like this - images, music and text are remixes of learned patterns, not invention from nothing.')}</p>
+            <button class="btn teal" id="gg-more">Mix another! 🧪</button>
+            <button class="btn orange" id="gg-quiz">I'm ready for the secret! 🤫</button>
+          </div>
+        </div>`,()=>{
+          document.getElementById('gg-more').onclick=()=>ggPick([]);
+          document.getElementById('gg-quiz').onclick=ggSecret;
+        });
+      },2000);
+    });
+}
+function ggSecret(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🤫 The big secret</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110,expr:'think'})}</div>
+      <div class="speech">Quiz time, ${esc(S.profile.name)}: could I invent a creature that is NOTHING like anything I have ever seen?</div>
+      <div class="card center">
+        <div class="choices">
+          <div class="choice" id="gg-y"><span class="e">🌟</span>Yes! You're magic!</div>
+          <div class="choice" id="gg-n"><span class="e">🧩</span>No - you only remix what you learned</div>
+        </div>
+        <div id="gg-verdict"></div>
+      </div>
+    </div>`,()=>{
+      const done=(right)=>{
+        document.getElementById('gg-y').style.pointerEvents='none';
+        document.getElementById('gg-n').style.pointerEvents='none';
+        document.getElementById('gg-verdict').innerHTML=`
+          <div class="score-line" style="color:${right?'var(--green)':'var(--red)'}">${right?'✅ Exactly right!':'❌ Tricked you!'}</div>
+          <p style="font-weight:600;margin-top:8px">${T(
+            'I can ONLY mix patterns from my training data. The Dolphicorn exists because I know dolphins AND unicorns. Show me nothing, and I know nothing. AI is a remix machine - the examples are EVERYTHING!',
+            'Generative AI recombines patterns from its training data - every output traces back to examples it learned from. That is why training data decides everything: what it can make, what it can\'t, and whose work it echoes.')}</p>
+          <button class="btn green" id="gg-fin">Finish the Grove! 🌳</button>`;
+        if(right)sfx('good');else sfx('bad');
+        document.getElementById('gg-fin').onclick=ggEnd;
+      };
+      document.getElementById('gg-y').onclick=()=>done(false);
+      document.getElementById('gg-n').onclick=()=>done(true);
+    });
+}
+function ggEnd(){
+  S.p7.done=true;earnCard('generation');earnUpgrade('jetpack');save();
+  go(`
+    <div class="screen on">
+      <div class="topbar"><span style="width:40px"></span><div class="who">🌳 Grove complete!</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-dance">${bitSVG({size:130,expr:'wow'})}</div>
+      <div class="speech">You know my deepest secret now, ${esc(S.profile.name)}!</div>
+      <div class="card center">
+        <span class="big-emoji">🏆</span>
+        <h2 style="margin-top:6px">Generative Grove complete!</h2>
+        <p style="font-weight:600;margin-top:8px">${T(
+          'AI doesn\'t invent from thin air - it remixes patterns it learned. You now know more about how AI works than most grown-ups!',
+          'Generation = recombination of learned patterns. You now understand the engine under every AI image, song and story - and why the training data is the whole game.')}</p>
+        <div class="pill">New card: 🎨 Generative AI</div><br>
+        <div class="pill">Bit upgrade: 🚀 Jetpack!</div>
+        <button class="btn green" id="done">Back to the map 🗺️</button>
+      </div>
+    </div>`,()=>{confetti();document.getElementById('done').onclick=showMap;});
+}
+function ggDone(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🌳 Generative Grove</div><span style="width:40px"></span></div>
+      <div class="bit-wrap">${bitSVG({size:110})}</div>
+      <div class="speech">The Grove is always growing! Want to mix more creatures?</div>
+      <div class="card center">
+        <button class="btn pink" id="replay">Mix creatures! 🔄</button>
+        <button class="btn ghost" id="goback">Back to map</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('goback').onclick=showMap;
+      document.getElementById('replay').onclick=()=>ggPick([]);
+    });
+}
 /* ================= BRAIN BOOK ================= */
 const CARDS={
   'what-is-ai':{e:'🤖',t:'What is AI?',d:T('AI is when computers learn from examples instead of only following fixed rules.','AI = computers that learn patterns from examples, instead of only following hand-written rules.')},
@@ -1073,7 +1478,9 @@ const CARDS={
   'verify':{e:'🔍',t:'Trust, But Verify',d:T('For anything important, check a source you trust - even if the answer sounded super sure!','Important claims deserve an independent source - especially the confident ones.')},
   'deepfakes':{e:'🌋',t:'Fake Photos & Deepfakes',d:T('Photos and videos can be edited - and AI can invent them. Look for impossible clues!','AI can fabricate faces, voices and video. Clues: impossible details, context mismatches, uncanny edges.')},
   'healthy-doubt':{e:'🧐',t:'Healthy Doubt',d:T('Before you believe or share something shocking, ask: who made this, and why?','Before believing or sharing, ask who made it and what they want you to feel.')},
-  'ai-master':{e:'🌟',t:'AI Master',d:T('All five islands complete! You train AI, catch its mistakes, keep it fair, spot it in the wild, and check its confidence.','All five islands: training data, bias, AI-in-the-wild, calibrated trust and media skepticism. Complete.')}
+  'ai-master':{e:'🌟',t:'AI Master',d:T('All five islands complete! You train AI, catch its mistakes, keep it fair, spot it in the wild, and check its confidence.','All five islands: training data, bias, AI-in-the-wild, calibrated trust and media skepticism. Complete.')},
+  'prompt-power':{e:'💬',t:'Prompt Power',d:T('AI follows instructions literally. Say exactly what you want - details, style, who it\'s for - and get way better results!','Models execute prompts literally. Specific instructions - audience, style, details, constraints - beat vague ones every time.')},
+  'generation':{e:'🎨',t:'Generative AI',d:T('AI \'invents\' new things by remixing patterns it learned. Show it nothing, it knows nothing!','Generation is recombination of training-data patterns - never invention from nothing.')}
 };
 function showBrainBook(){
   go(`
@@ -1101,7 +1508,7 @@ function showBrainBook(){
 }
 /* ================= PARENT DASHBOARD ================= */
 function showParent(){
-  const done=[S.p1.done,S.p2.done,S.p3.done,S.p4.done,S.p5.done].filter(Boolean).length;
+  const done=[S.p1.done,S.p2.done,S.p3.done,S.p4.done,S.p5.done,S.p6.done,S.p7.done].filter(Boolean).length;
   const mins=Math.floor(S.playSeconds/60);
   const learned=[];
   if(S.cards.includes('what-is-ai'))learned.push('What AI is (and isn\'t) - computers learning from examples');
@@ -1114,6 +1521,8 @@ function showParent(){
   if(S.cards.includes('verify'))learned.push('Verifying important answers against trusted sources');
   if(S.cards.includes('deepfakes'))learned.push('Photos and videos can be edited or AI-faked - spotting the clues');
   if(S.cards.includes('healthy-doubt'))learned.push('Healthy doubt: asking "who made this, and why?"');
+  if(S.cards.includes('prompt-power'))learned.push('Prompting: specific instructions (audience, style, details) get better results');
+  if(S.cards.includes('generation'))learned.push('Generative AI: new content is remixed from training patterns, not invented');
   go(`
     <div class="screen on">
       <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">🛡️ For Parents</div><span style="width:40px"></span></div>
@@ -1121,7 +1530,7 @@ function showParent(){
         <h2>${esc(S.profile.name)}'s progress</h2>
         <span class="pill">Age band: ${S.profile.band==='A'?'6-8':'9-12'}</span>
         <div class="stat-grid">
-          <div class="stat"><div class="v">${done} / 5</div><div class="l">Islands completed</div></div>
+          <div class="stat"><div class="v">${done} / 7</div><div class="l">Islands completed</div></div>
           <div class="stat"><div class="v">${S.cards.length} / ${Object.keys(CARDS).length}</div><div class="l">Concept cards</div></div>
           <div class="stat"><div class="v">${mins} min</div><div class="l">Time playing</div></div>
           <div class="stat"><div class="v">${S.sessions}</div><div class="l">Sessions</div></div>
