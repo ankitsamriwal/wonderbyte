@@ -57,6 +57,14 @@ h2{font-size:22px}
 .bit-float{animation:floaty 2.6s ease-in-out infinite}
 .bit-bounce{animation:bounce .7s ease infinite}
 .bit-wiggle{animation:wiggle .4s ease infinite}
+.wotd-strip{display:flex;gap:10px;margin-top:10px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}
+.wotd-card{flex:1 0 78%;scroll-snap-align:start;background:linear-gradient(150deg,#2D3436 0%,#3d4650 100%);border-radius:20px;padding:14px 16px;box-shadow:0 6px 0 rgba(0,0,0,.18);cursor:pointer;transition:transform .08s}
+.wotd-card:active{transform:scale(.97)}
+.wotd-label{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--teal)}
+.wotd-word{font-size:26px;font-weight:900;color:var(--yellow);margin-top:2px}
+.wotd-def{font-size:14px;font-weight:700;color:#fff;margin-top:4px;line-height:1.35}
+.wotd-eg{font-size:12.5px;color:var(--teal);margin-top:6px;font-style:italic;line-height:1.35}
+.wotd-emoji{float:right;font-size:30px;margin-left:8px}
 .speech{
   position:relative;background:#fff;border-radius:18px;padding:12px 16px;margin:10px auto 0;
   max-width:320px;font-size:16px;font-weight:600;box-shadow:0 4px 0 rgba(0,0,0,.12);
@@ -383,6 +391,7 @@ function showMap(){
           <button class="icon-btn" id="map-parent" title="For parents">🛡️</button>
         </div>
       </div>
+      <div id="wotd-slot"></div>
       <div class="bit-wrap bit-float" id="map-bit" style="cursor:pointer" title="Tap me!">${bitSVG({size:110})}</div>
       <div class="speech">${mapSpeech()}</div>
       <div id="break-slot"></div>
@@ -399,6 +408,7 @@ function showMap(){
       document.getElementById('map-parent').onclick=()=>showGate('parent');
       document.getElementById('map-sound').onclick=()=>{S.sound=!(S.sound===false);save();document.getElementById('map-sound').textContent=S.sound?'🔊':'🔇';sfx('tap');};
       document.getElementById('map-bit').onclick=bitHello;
+      showWordOfDay();
       showDailyRiddle();
       document.querySelectorAll('.island').forEach(el=>el.onclick=()=>{
         const id=el.dataset.i;
@@ -1180,6 +1190,71 @@ function playRiddle(r){
         S.daily={date:todayStr(),done:true};save();
         document.getElementById('rid-done').onclick=showMap;
       });
+    });
+}
+/* ================= WORD OF THE DAY ================= */
+const WOTD=[
+  {w:'PROMPT',e:'💬',d:'The instructions you give an AI.',g:'"Draw a cat" is a prompt. "Draw a fluffy orange cat" is a better one!'},
+  {w:'DATA',e:'🧺',d:'Information a computer learns from.',g:'Photos, words, numbers - it is all data!'},
+  {w:'ALGORITHM',e:'🪜',d:'A recipe of steps a computer follows.',g:'Like "if it rains, take an umbrella" - but for computers.'},
+  {w:'MODEL',e:'🧠',d:'What an AI builds inside after learning from examples.',g:'Practice makes a model - just like practice makes YOU better.'},
+  {w:'TRAINING',e:'🏋️',d:'Teaching an AI by showing it lots of examples.',g:'Show it 100 cat photos. That is training!'},
+  {w:'CHATBOT',e:'🤖',d:'A program you talk to - and it talks back.',g:'Like me! Hi!'},
+  {w:'ROBOT',e:'🦾',d:'A machine that can sense things and do things.',g:'Vacuum robots clean. Factory robots build cars.'},
+  {w:'PATTERN',e:'🔁',d:'Something that repeats, so you can guess what comes next.',g:'Red, blue, red, blue... what color is next?'},
+  {w:'PREDICTION',e:'🔮',d:'A smart guess about the future.',g:'AI predicts tomorrow\'s weather from lots of old weather.'},
+  {w:'BUG',e:'🐛',d:'A mistake in a program.',g:'One tiny bug can crash a whole game!'},
+  {w:'DEBUG',e:'🔍',d:'Finding and fixing a bug.',g:'Detectives find clues. Programmers find bugs.'},
+  {w:'CODE',e:'💻',d:'The language we write to tell computers what to do.',g:'Code is how humans talk to machines.'},
+  {w:'LABEL',e:'🏷️',d:'The name tag we put on data so AI can learn.',g:'Tag a photo "cat" and the AI learns what a cat looks like.'},
+  {w:'DATASET',e:'📚',d:'A big pile of data used for training.',g:'10,000 labeled photos = one dataset.'},
+  {w:'SENSOR',e:'👁️',d:'How machines feel the world.',g:'A phone\'s camera and microphone are its eyes and ears.'},
+  {w:'VOICE ASSISTANT',e:'🗣️',d:'An AI that listens and answers.',g:'Ask it to set a timer or tell a joke.'},
+  {w:'RECOMMENDATION',e:'⭐',d:'When AI suggests what you might like next.',g:'"You liked this video - try this one!"'},
+  {w:'SEARCH',e:'🔎',d:'Finding exactly what you need in a giant pile.',g:'The internet\'s lost-and-found box.'},
+  {w:'FILTER',e:'🧹',d:'Keeping the good stuff in and the junk out.',g:'Like a sieve, but for information.'},
+  {w:'CLOUD',e:'☁️',d:'Far-away computers that store things for you.',g:'Your photos live in the cloud, not in your phone\'s pocket.'},
+  {w:'GENERATE',e:'🎨',d:'When AI makes something brand new.',g:'New pictures, new stories, new music - made fresh!'},
+  {w:'DEEPFAKE',e:'🎭',d:'A fake photo or video that looks real.',g:'Always ask: did this really happen?'},
+  {w:'BIAS',e:'⚖️',d:'When AI learns something unfair from unfair examples.',g:'Show it only red apples and it thinks ALL apples are red.'},
+  {w:'HALLUCINATION',e:'🌈',d:'When an AI confidently makes stuff up.',g:'Even smart AIs invent "facts". Always double-check!'},
+  {w:'MACHINE LEARNING',e:'📈',d:'Computers getting better from examples, not rules.',g:'Practice, not instructions.'},
+  {w:'NEURAL NETWORK',e:'🕸️',d:'An AI brain inspired by your brain\'s wiring.',g:'Layers of tiny math neurons, all chatting at once.'},
+  {w:'INTERNET',e:'🌐',d:'Every computer, connected together.',g:'A giant playground where all the computers hang out.'},
+  {w:'UPLOAD',e:'⬆️',d:'Sending something from your device to the internet.',g:'Like mailing a letter to the cloud.'},
+  {w:'DOWNLOAD',e:'⬇️',d:'Grabbing something from the internet to your device.',g:'Like the cloud mailing YOU a letter.'},
+  {w:'PROGRAMMER',e:'👩‍💻',d:'A person who writes code.',g:'The storytellers computers listen to.'},
+];
+function showWordOfDay(){
+  const slot=document.getElementById('wotd-slot');
+  if(!slot)return;
+  const i1=dayOfYear()%WOTD.length, i2=(dayOfYear()+1)%WOTD.length;
+  slot.innerHTML=`<div class="wotd-strip">${[i1,i2].map(k=>{const w=WOTD[k];return `
+    <div class="wotd-card" data-k="${k}">
+      <span class="wotd-emoji">${w.e}</span>
+      <div class="wotd-label">WORD OF THE DAY</div>
+      <div class="wotd-word">${w.w}</div>
+      <div class="wotd-def">${w.d}</div>
+    </div>`}).join('')}</div>`;
+  slot.querySelectorAll('.wotd-card').forEach(el=>el.onclick=()=>{sfx('tap');showWordCard(parseInt(el.dataset.k,10));});
+}
+function showWordCard(k){
+  const w=WOTD[k];
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">💡 Word of the Day</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:110,expr:'happy'})}</div>
+      <div class="speech">Ooh, good one! Say it with me: <b>${w.w}</b>!</div>
+      <div class="card" style="background:linear-gradient(150deg,#2D3436 0%,#3d4650 100%)">
+        <div class="center" style="font-size:56px">${w.e}</div>
+        <div class="wotd-word center" style="font-size:34px">${w.w}</div>
+        <div class="wotd-def center" style="font-size:18px;margin-top:10px">${w.d}</div>
+        <div class="wotd-eg center" style="font-size:15px;margin-top:12px">${w.g}</div>
+        <button class="btn teal" id="wotd-done" style="margin-top:18px">Got it! 🗺️</button>
+      </div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.getElementById('wotd-done').onclick=showMap;
     });
 }
 /* ================= LESSON 6: PROMPT PORT ================= */
