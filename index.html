@@ -265,6 +265,20 @@ function go(html,after){
   window.scrollTo(0,0);
   if(after)after();
 }
+/* ---- Back button: step back through screens, exit only at the first screen ---- */
+const NAVBK=(function(){
+  let cur=null;const stack=[];let applying=false;
+  const raw=go;
+  go=function(html,after){
+    if(!applying&&cur){stack.push(cur);try{history.pushState({wb:1},'')}catch(e){}}
+    cur={html,after};raw(html,after);
+  };
+  window.addEventListener('popstate',()=>{
+    if(!stack.length)return; /* base screen: browser/TWA handles exit */
+    applying=true;const p=stack.pop();cur=p;raw(p.html,p.after);applying=false;
+  });
+  return {};
+})();
 function esc(s){return String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
 /* ================= PARENT GATE ================= */
 let gateTarget='setup';
