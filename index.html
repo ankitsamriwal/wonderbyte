@@ -1160,7 +1160,17 @@ const RIDDLES=[
   {q:'A phone that unlocks when it sees your face. AI or not?',opts:['🤖 AI','🙅 Not AI'],a:0,why:T('It learned your face from examples - AI!','It learned to recognize your face from examples. AI.')},
   {q:'A shocking video of a celebrity appears online. First move?',opts:['📤 Share it fast','🔍 Check the source'],a:1,why:T('Check WHO posted it and if trusted sources report it too!','Shocking media is exactly what fakers make. Verify before sharing.')},
   {q:'AI picks players only from old photos of red-shirt teams. Fair?',opts:['⚖️ Fair','🚫 Not fair'],a:1,why:T('Unfair examples = unfair picks. That\'s bias!','Biased training data produces biased picks. People must check.')},
-  {q:'Can AI be super confident AND super wrong at the same time?',opts:['✅ Yes','❌ No'],a:0,why:T('Absolutely - you saw it on Mistake Mountain!','Yes - confidence comes from the same data as the answer, blind spots included.')}
+  {q:'Can AI be super confident AND super wrong at the same time?',opts:['✅ Yes','❌ No'],a:0,why:T('Absolutely - you saw it on Mistake Mountain!','Yes - confidence comes from the same data as the answer, blind spots included.')},
+  {q:'Your robot vacuum learned your house. What did it learn from?',opts:['📷 Training data','🎲 Random luck'],a:0,why:T('It practiced with lots of pictures of rooms - that is training data!','The map comes from sensor data gathered over many runs.')},
+  {q:'Is a microwave AI because it beeps when food is ready?',opts:['🤖 Yes, it beeps','🚫 No'],a:1,why:T('A timer is not AI - it just counts down. No learning!','A timer follows a fixed rule. AI learns from examples.')},
+  {q:'Your map app suddenly says: faster road found! That is probably...',opts:['🛰️ AI watching traffic','🐦 A lucky guess'],a:0,why:T('It watches live traffic and finds a new way - smart!','Routing apps update constantly from live traffic data.')},
+  {q:'An AI tells you a made-up fact very confidently. What is that called?',opts:['🌈 A hallucination','🏆 A truth'],a:0,why:T('When AI invents facts, we call it a hallucination. Double-check!','Confident invented output is a hallucination - always verify.')},
+  {q:'Which homework prompt works better?',opts:['Do my homework','Explain fractions with pizza slices'],a:1,why:T('Specific prompts get specific, useful answers!','Specific instructions give the model a clear target.')},
+  {q:'AI made a brand new song nobody ever sang before. That is...',opts:['🎨 Generative AI','📻 A radio'],a:0,why:T('Making new things - songs, pictures, stories - is generative AI!','Generative models create new content from learned patterns.')},
+  {q:'Should you tell a chatbot your home address?',opts:['🏠 Sure, it is friendly','🔒 No, keep it private'],a:1,why:T('Never share your address or secrets - even with a friendly bot!','Personal data shared with apps can leak. Keep it private.')},
+  {q:'A video shows a person with six fingers saying strange things. What is the clue?',opts:['🎭 It might be a deepfake','📸 Totally real'],a:0,why:T('Weird details like extra fingers can be AI mistakes - check before believing!','Deepfakes often slip on small details. Verify with trusted sources.')},
+  {q:'AI story books only make the hero a boy with brown hair. Problem?',opts:['⚖️ Biased examples','👍 No problem'],a:0,why:T('If it only saw one kind of hero, it learned unfairly. That is bias!','Narrow training data teaches narrow, unfair patterns.')},
+  {q:'An AI saw only 3 photos of you. Why is its drawing wobbly?',opts:['📚 It needs more examples','🐌 It is lazy'],a:0,why:T('More examples = better learning. Three is just not enough!','Models need many examples; too few means unreliable output.')}
 ];
 function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function dayOfYear(){const d=new Date();return Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);}
@@ -1238,15 +1248,21 @@ const WOTD=[
   {w:'UPLOAD',e:'⬆️',d:'Sending something from your device to the internet.',g:'Like mailing a letter to the cloud.'},
   {w:'DOWNLOAD',e:'⬇️',d:'Grabbing something from the internet to your device.',g:'Like the cloud mailing YOU a letter.'},
   {w:'PROGRAMMER',e:'👩‍💻',d:'A person who writes code.',g:'The storytellers computers listen to.'},
+  {w:'PROMPT ENGINEER',e:'🗣️',d:'A person who writes the instructions AI follows.',g:'The better the instructions, the better the answer!'},
+  {w:'AI ENGINEER',e:'🛠️',d:'A person who builds and teaches AI systems.',g:'They are like teachers - but their students are computers!'},
+  {w:'DATA ARCHITECT',e:'🗺️',d:'Someone who draws the map of where data lives.',g:'Like an architect designs a building, they design how data is stored.'},
+  {w:'AI SAFETY RESEARCHER',e:'🧺',d:'Someone who makes sure AI is safe and fair.',g:'They test AI the way crash-test dummies test cars!'},
+  {w:'DATA ENGINEER',e:'🚰',d:'Someone who builds the pipes that carry data.',g:'Clean water flows through pipes. Clean data flows through their pipelines!'},
+  {w:'UX RESEARCHER',e:'🧪',d:'Someone who watches how people use apps to make them better.',g:'They watch kids play a game, then make it easier to use!'},
 ];
 function showWordOfDay(){
   const slot=document.getElementById('wotd-slot');
   if(!slot)return;
   const i1=dayOfYear()%WOTD.length, i2=(dayOfYear()+1)%WOTD.length;
-  slot.innerHTML=`<div class="wotd-strip">${[i1,i2].map(k=>{const w=WOTD[k];return `
+  slot.innerHTML=`<div class="wotd-strip">${[i1,i2].map(k=>{const w=WOTD[k];const got=S.cards.includes('word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-'));return `
     <div class="wotd-card" data-k="${k}">
       <span class="wotd-emoji">${w.e}</span>
-      <div class="wotd-label">WORD OF THE DAY</div>
+      <div class="wotd-label">WORD OF THE DAY${got?' · COLLECTED ✓':''}</div>
       <div class="wotd-word">${w.w}</div>
       <div class="wotd-def">${w.d}</div>
     </div>`}).join('')}</div>`;
@@ -1254,6 +1270,8 @@ function showWordOfDay(){
 }
 function showWordCard(k){
   const w=WOTD[k];
+  const wid='word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const owned=S.cards.includes(wid);
   go(`
     <div class="screen on">
       <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">💡 Word of the Day</div><span style="width:40px"></span></div>
@@ -1264,11 +1282,11 @@ function showWordCard(k){
         <div class="wotd-word center" style="font-size:34px">${w.w}</div>
         <div class="wotd-def center" style="font-size:18px;margin-top:10px">${w.d}</div>
         <div class="wotd-eg center" style="font-size:15px;margin-top:12px">${w.g}</div>
-        <button class="btn teal" id="wotd-done" style="margin-top:18px">Got it! 🗺️</button>
+        <button class="btn teal" id="wotd-done" style="margin-top:18px">${owned?'Collected ✓ 🗺️':'Got it! 🧠'}</button>
       </div>
     </div>`,()=>{
       document.getElementById('back').onclick=showMap;
-      document.getElementById('wotd-done').onclick=showMap;
+      document.getElementById('wotd-done').onclick=()=>{if(!owned){earnCard(wid);sfx('good');}showMap();};
     });
 }
 /* ================= LESSON 6: PROMPT PORT ================= */
@@ -1571,6 +1589,12 @@ const CARDS={
   'prompt-power':{e:'💬',t:'Prompt Power',d:T('AI follows instructions literally. Say exactly what you want - details, style, who it\'s for - and get way better results!','Models execute prompts literally. Specific instructions - audience, style, details, constraints - beat vague ones every time.')},
   'generation':{e:'🎨',t:'Generative AI',d:T('AI \'invents\' new things by remixing patterns it learned. Show it nothing, it knows nothing!','Generation is recombination of training-data patterns - never invention from nothing.')}
 };
+/* Word of the Day words double as collectible Brain Book cards */
+WOTD.forEach(w=>{
+  const id='word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const t=w.w.toLowerCase().split(' ').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ').replace(/\bAi\b/g,'AI');
+  CARDS[id]={e:w.e,t:t,d:w.d+' '+w.g};
+});
 function showBrainBook(){
   go(`
     <div class="screen on">
@@ -1628,6 +1652,7 @@ function showParent(){
       <div class="card">
         <h2>What ${esc(S.profile.name)} learned</h2>
         ${learned.length?learned.map(l=>`<p style="font-weight:600;margin-top:8px">✅ ${l}</p>`).join(''):'<p class="muted" style="margin-top:8px">Nothing yet - the adventure awaits!</p>'}
+        <p style="font-weight:600;margin-top:8px">📚 Word of the Day cards collected: ${S.cards.filter(c=>c.indexOf('word-')===0).length} of ${WOTD.length}</p>
       </div>
       <div class="card">
         <h2>Our promises 🛡️</h2>
