@@ -181,7 +181,7 @@ const SAVE_KEY='wonderbyte_v1';
 const DEFAULT_STATE={
   profile:null, // {name,band:'A'|'B',color}
   p1:{step:0,done:false}, p2:{done:false}, p3:{done:false,best:0}, p4:{done:false}, p5:{done:false,best:0}, p6:{done:false}, p7:{done:false}, sound:true, daily:{date:'',done:false}, riddles:0,
-  cards:[], upgrades:[],
+  cards:[], upgrades:[], stories:[],
   playSeconds:0, sessions:0, breakShownAt:0
 };
 let S=load();
@@ -395,6 +395,7 @@ function mapSpeech(){
 }
 function showMap(){
   const isl=islands();
+  const totalW=WOTD.length, gotW=S.cards.filter(c=>c.indexOf('word-')===0).length;
   go(`
     <div class="screen on">
       <div class="topbar">
@@ -416,9 +417,21 @@ function showMap(){
           <div class="meta"><h3>${i.name}</h3><p>${i.desc}</p></div>
           <span class="badge ${i.state==='done'?'done':(i.state==='next'?'next':'lock')}">${i.state==='done'?'DONE ✓':(i.state==='next'?'GO!':'🔒')}</span>
         </div>`).join('')}
+      <div class="island" id="open-packs">
+        <div class="scene">📚</div>
+        <div class="meta"><h3>Word Packs</h3><p>${gotW} of ${totalW} words collected - browse by theme!</p></div>
+        <span class="badge next">OPEN</span>
+      </div>
+      <div class="island" id="open-stories">
+        <div class="scene">📖</div>
+        <div class="meta"><h3>Story Corner</h3><p>${S.stories.length} of ${STORIES.length} stories read - with Abir &amp; Kashvi!</p></div>
+        <span class="badge next">OPEN</span>
+      </div>
       <div class="footer-space"></div>
     </div>`,()=>{
       document.getElementById('map-book').onclick=showBrainBook;
+      document.getElementById('open-packs').onclick=()=>{sfx('tap');showPacks();};
+      document.getElementById('open-stories').onclick=()=>{sfx('tap');showStories();};
       document.getElementById('map-parent').onclick=()=>showGate('parent');
       document.getElementById('map-sound').onclick=()=>{S.sound=!(S.sound===false);save();document.getElementById('map-sound').textContent=S.sound?'🔊':'🔇';sfx('tap');};
       document.getElementById('map-bit').onclick=bitHello;
@@ -1218,48 +1231,108 @@ function playRiddle(r){
 }
 /* ================= WORD OF THE DAY ================= */
 const WOTD=[
-  {w:'PROMPT',e:'💬',d:'The instructions you give an AI.',g:'"Draw a cat" is a prompt. "Draw a fluffy orange cat" is a better one!'},
-  {w:'DATA',e:'🧺',d:'Information a computer learns from.',g:'Photos, words, numbers - it is all data!'},
-  {w:'ALGORITHM',e:'🪜',d:'A recipe of steps a computer follows.',g:'Like "if it rains, take an umbrella" - but for computers.'},
-  {w:'MODEL',e:'🧠',d:'What an AI builds inside after learning from examples.',g:'Practice makes a model - just like practice makes YOU better.'},
-  {w:'TRAINING',e:'🏋️',d:'Teaching an AI by showing it lots of examples.',g:'Show it 100 cat photos. That is training!'},
-  {w:'CHATBOT',e:'🤖',d:'A program you talk to - and it talks back.',g:'Like me! Hi!'},
-  {w:'ROBOT',e:'🦾',d:'A machine that can sense things and do things.',g:'Vacuum robots clean. Factory robots build cars.'},
-  {w:'PATTERN',e:'🔁',d:'Something that repeats, so you can guess what comes next.',g:'Red, blue, red, blue... what color is next?'},
-  {w:'PREDICTION',e:'🔮',d:'A smart guess about the future.',g:'AI predicts tomorrow\'s weather from lots of old weather.'},
-  {w:'BUG',e:'🐛',d:'A mistake in a program.',g:'One tiny bug can crash a whole game!'},
-  {w:'DEBUG',e:'🔍',d:'Finding and fixing a bug.',g:'Detectives find clues. Programmers find bugs.'},
-  {w:'CODE',e:'💻',d:'The language we write to tell computers what to do.',g:'Code is how humans talk to machines.'},
-  {w:'LABEL',e:'🏷️',d:'The name tag we put on data so AI can learn.',g:'Tag a photo "cat" and the AI learns what a cat looks like.'},
-  {w:'DATASET',e:'📚',d:'A big pile of data used for training.',g:'10,000 labeled photos = one dataset.'},
-  {w:'SENSOR',e:'👁️',d:'How machines feel the world.',g:'A phone\'s camera and microphone are its eyes and ears.'},
-  {w:'VOICE ASSISTANT',e:'🗣️',d:'An AI that listens and answers.',g:'Ask it to set a timer or tell a joke.'},
-  {w:'RECOMMENDATION',e:'⭐',d:'When AI suggests what you might like next.',g:'"You liked this video - try this one!"'},
-  {w:'SEARCH',e:'🔎',d:'Finding exactly what you need in a giant pile.',g:'The internet\'s lost-and-found box.'},
-  {w:'FILTER',e:'🧹',d:'Keeping the good stuff in and the junk out.',g:'Like a sieve, but for information.'},
-  {w:'CLOUD',e:'☁️',d:'Far-away computers that store things for you.',g:'Your photos live in the cloud, not in your phone\'s pocket.'},
-  {w:'GENERATE',e:'🎨',d:'When AI makes something brand new.',g:'New pictures, new stories, new music - made fresh!'},
-  {w:'DEEPFAKE',e:'🎭',d:'A fake photo or video that looks real.',g:'Always ask: did this really happen?'},
-  {w:'BIAS',e:'⚖️',d:'When AI learns something unfair from unfair examples.',g:'Show it only red apples and it thinks ALL apples are red.'},
-  {w:'HALLUCINATION',e:'🌈',d:'When an AI confidently makes stuff up.',g:'Even smart AIs invent "facts". Always double-check!'},
-  {w:'MACHINE LEARNING',e:'📈',d:'Computers getting better from examples, not rules.',g:'Practice, not instructions.'},
-  {w:'NEURAL NETWORK',e:'🕸️',d:'An AI brain inspired by your brain\'s wiring.',g:'Layers of tiny math neurons, all chatting at once.'},
-  {w:'INTERNET',e:'🌐',d:'Every computer, connected together.',g:'A giant playground where all the computers hang out.'},
-  {w:'UPLOAD',e:'⬆️',d:'Sending something from your device to the internet.',g:'Like mailing a letter to the cloud.'},
-  {w:'DOWNLOAD',e:'⬇️',d:'Grabbing something from the internet to your device.',g:'Like the cloud mailing YOU a letter.'},
-  {w:'PROGRAMMER',e:'👩‍💻',d:'A person who writes code.',g:'The storytellers computers listen to.'},
-  {w:'PROMPT ENGINEER',e:'🗣️',d:'A person who writes the instructions AI follows.',g:'The better the instructions, the better the answer!'},
-  {w:'AI ENGINEER',e:'🛠️',d:'A person who builds and teaches AI systems.',g:'They are like teachers - but their students are computers!'},
-  {w:'DATA ARCHITECT',e:'🗺️',d:'Someone who draws the map of where data lives.',g:'Like an architect designs a building, they design how data is stored.'},
-  {w:'AI SAFETY RESEARCHER',e:'🧺',d:'Someone who makes sure AI is safe and fair.',g:'They test AI the way crash-test dummies test cars!'},
-  {w:'DATA ENGINEER',e:'🚰',d:'Someone who builds the pipes that carry data.',g:'Clean water flows through pipes. Clean data flows through their pipelines!'},
-  {w:'UX RESEARCHER',e:'🧪',d:'Someone who watches how people use apps to make them better.',g:'They watch kids play a game, then make it easier to use!'},
+  {w:'PROMPT',p:'basics',e:'💬',d:'The instructions you give an AI.',g:'"Draw a cat" is a prompt. "Draw a fluffy orange cat" is a better one!'},
+  {w:'DATA',p:'basics',e:'🧺',d:'Information a computer learns from.',g:'Photos, words, numbers - it is all data!'},
+  {w:'ALGORITHM',p:'basics',e:'🪜',d:'A recipe of steps a computer follows.',g:'Like "if it rains, take an umbrella" - but for computers.'},
+  {w:'MODEL',p:'basics',e:'🧠',d:'What an AI builds inside after learning from examples.',g:'Practice makes a model - just like practice makes YOU better.'},
+  {w:'TRAINING',p:'basics',e:'🏋️',d:'Teaching an AI by showing it lots of examples.',g:'Show it 100 cat photos. That is training!'},
+  {w:'CHATBOT',p:'basics',e:'🤖',d:'A program you talk to - and it talks back.',g:'Like me! Hi!'},
+  {w:'ROBOT',p:'basics',e:'🦾',d:'A machine that can sense things and do things.',g:'Vacuum robots clean. Factory robots build cars.'},
+  {w:'PATTERN',p:'basics',e:'🔁',d:'Something that repeats, so you can guess what comes next.',g:'Red, blue, red, blue... what color is next?'},
+  {w:'PREDICTION',p:'basics',e:'🔮',d:'A smart guess about the future.',g:'AI predicts tomorrow\'s weather from lots of old weather.'},
+  {w:'BUG',p:'basics',e:'🐛',d:'A mistake in a program.',g:'One tiny bug can crash a whole game!'},
+  {w:'DEBUG',p:'basics',e:'🔍',d:'Finding and fixing a bug.',g:'Detectives find clues. Programmers find bugs.'},
+  {w:'CODE',p:'basics',e:'💻',d:'The language we write to tell computers what to do.',g:'Code is how humans talk to machines.'},
+  {w:'LABEL',p:'basics',e:'🏷️',d:'The name tag we put on data so AI can learn.',g:'Tag a photo "cat" and the AI learns what a cat looks like.'},
+  {w:'DATASET',p:'basics',e:'📚',d:'A big pile of data used for training.',g:'10,000 labeled photos = one dataset.'},
+  {w:'SENSOR',p:'basics',e:'👁️',d:'How machines feel the world.',g:'A phone\'s camera and microphone are its eyes and ears.'},
+  {w:'VOICE ASSISTANT',p:'web',e:'🗣️',d:'An AI that listens and answers.',g:'Ask it to set a timer or tell a joke.'},
+  {w:'RECOMMENDATION',p:'web',e:'⭐',d:'When AI suggests what you might like next.',g:'"You liked this video - try this one!"'},
+  {w:'SEARCH',p:'web',e:'🔎',d:'Finding exactly what you need in a giant pile.',g:'The internet\'s lost-and-found box.'},
+  {w:'FILTER',p:'web',e:'🧹',d:'Keeping the good stuff in and the junk out.',g:'Like a sieve, but for information.'},
+  {w:'CLOUD',p:'web',e:'☁️',d:'Far-away computers that store things for you.',g:'Your photos live in the cloud, not in your phone\'s pocket.'},
+  {w:'GENERATE',p:'create',e:'🎨',d:'When AI makes something brand new.',g:'New pictures, new stories, new music - made fresh!'},
+  {w:'DEEPFAKE',p:'safety',e:'🎭',d:'A fake photo or video that looks real.',g:'Always ask: did this really happen?'},
+  {w:'BIAS',p:'safety',e:'⚖️',d:'When AI learns something unfair from unfair examples.',g:'Show it only red apples and it thinks ALL apples are red.'},
+  {w:'HALLUCINATION',p:'safety',e:'🌈',d:'When an AI confidently makes stuff up.',g:'Even smart AIs invent "facts". Always double-check!'},
+  {w:'MACHINE LEARNING',p:'basics',e:'📈',d:'Computers getting better from examples, not rules.',g:'Practice, not instructions.'},
+  {w:'NEURAL NETWORK',p:'basics',e:'🕸️',d:'An AI brain inspired by your brain\'s wiring.',g:'Layers of tiny math neurons, all chatting at once.'},
+  {w:'INTERNET',p:'web',e:'🌐',d:'Every computer, connected together.',g:'A giant playground where all the computers hang out.'},
+  {w:'UPLOAD',p:'web',e:'⬆️',d:'Sending something from your device to the internet.',g:'Like mailing a letter to the cloud.'},
+  {w:'DOWNLOAD',p:'web',e:'⬇️',d:'Grabbing something from the internet to your device.',g:'Like the cloud mailing YOU a letter.'},
+  {w:'PROGRAMMER',p:'people',e:'👩‍💻',d:'A person who writes code.',g:'The storytellers computers listen to.'},
+  {w:'PROMPT ENGINEER',p:'people',e:'🗣️',d:'A person who writes the instructions AI follows.',g:'The better the instructions, the better the answer!'},
+  {w:'AI ENGINEER',p:'people',e:'🛠️',d:'A person who builds and teaches AI systems.',g:'They are like teachers - but their students are computers!'},
+  {w:'DATA ARCHITECT',p:'people',e:'🗺️',d:'Someone who draws the map of where data lives.',g:'Like an architect designs a building, they design how data is stored.'},
+  {w:'AI SAFETY RESEARCHER',p:'people',e:'🧺',d:'Someone who makes sure AI is safe and fair.',g:'They test AI the way crash-test dummies test cars!'},
+  {w:'DATA ENGINEER',p:'people',e:'🚰',d:'Someone who builds the pipes that carry data.',g:'Clean water flows through pipes. Clean data flows through their pipelines!'},
+  {w:'UX RESEARCHER',p:'people',e:'🧪',d:'Someone who watches how people use apps to make them better.',g:'They watch kids play a game, then make it easier to use!'},
+  {w:'SATELLITE',p:'space',e:'\uD83D\uDEF0\uFE0F',d:'A machine flying in space that takes photos and sends signals.',g:'GPS maps and weather forecasts both need satellites.'},
+  {w:'ROVER',p:'space',e:'\uD83E\uDD16',d:'A robot that drives around on other planets.',g:'Mars rovers explore where people cannot go yet.'},
+  {w:'NAVIGATION',p:'space',e:'\uD83E\uDDED',d:'Finding the best way from here to there.',g:'Your map app uses AI to dodge traffic jams.'},
+  {w:'ORBIT',p:'space',e:'\uD83C\uDF0D',d:'The path a satellite takes around a planet.',g:'Like running laps around a very, very big track.'},
+  {w:'ASTRONAUT',p:'space',e:'\uD83D\uDE80',d:'A person trained to travel to space.',g:'AI helpers on the space station answer astronaut questions fast.'},
+  {w:'TELESCOPE',p:'space',e:'\uD83D\uDD2D',d:'A super-camera for looking deep into space.',g:'AI helps telescopes find new planets hiding in piles of data.'},
+  {w:'TRACKER',p:'animals',e:'\uD83D\uDC3E',d:'Tech that follows where animals go.',g:'Scientists put trackers on sea turtles to keep them safe.'},
+  {w:'WILDLIFE CAMERA',p:'animals',e:'\uD83D\uDCF8',d:'A camera that snaps animal photos all by itself.',g:'AI sorts thousands of forest photos to find one rare snow leopard.'},
+  {w:'MIGRATION',p:'animals',e:'\uD83E\uDD85',d:'When animals move with the seasons.',g:'AI predicts where the herds will walk next, so rangers can protect them.'},
+  {w:'SOUNDSCAPE',p:'animals',e:'\uD83C\uDFB6',d:'All the sounds of a place, recorded together.',g:'AI listens to a forest and counts frogs by their croaks.'},
+  {w:'PET TRANSLATOR',p:'animals',e:'\uD83D\uDC15',d:'An AI that guesses what an animal sound means.',g:'Bark, bark, whine - someday AI might tell you exactly why.'},
+  {w:'ENDANGERED',p:'animals',e:'\uD83E\uDD8F',d:'A species with very few left in the wild.',g:'AI rangers spot trouble and protect rhinos and tigers.'},
+  {w:'ALLOWANCE',p:'money',e:'\uD83E\uDE99',d:'Money you earn and plan to spend.',g:'Budget apps use AI to help families plan their money.'},
+  {w:'SAVINGS',p:'money',e:'\uD83D\uDC37',d:'Money you keep for later.',g:'A piggy bank that fills itself? That is an auto-save rule.'},
+  {w:'PRICE TAG',p:'money',e:'\uD83C\uDFF7\uFE0F',d:'What something costs.',g:'Online shops use AI to change prices, like a shopkeeper who never sleeps.'},
+  {w:'BUDGET',p:'money',e:'\uD83D\uDCD2',d:'A plan for your money.',g:'Spend some, save some, share some - a budget is a plan, not a punishment.'},
+  {w:'FRAUD',p:'money',e:'\uD83D\uDD75\uFE0F',d:'A trick to steal money.',g:'Banks use AI to catch a card being used in two cities at once.'},
+  {w:'DONATION',p:'money',e:'\uD83D\uDC9D',d:'Giving money to help others.',g:'AI helps charities find the people their help fits best.'},
+  {w:'RECIPE',p:'food',e:'\uD83E\uDD69',d:'Steps for making food.',g:'AI can invent brand-new recipes. Pizza with pears, anyone?'},
+  {w:'INGREDIENT',p:'food',e:'\uD83E\uDD55',d:'One food that goes into a recipe.',g:'Snap a photo of your fridge and AI suggests dinner.'},
+  {w:'HARVEST',p:'food',e:'\uD83C\uDF3E',d:'Collecting crops when they are ready.',g:'Farm robots pick only the ripe strawberries and leave the rest to grow.'},
+  {w:'FOOD WASTE',p:'food',e:'\uD83D\uDDD1\uFE0F',d:'Good food that gets thrown away.',g:'AI helps stores sell food before it spoils.'},
+  {w:'TASTE TEST',p:'food',e:'\uD83D\uDC45',d:'Trying food to say yum or yuck.',g:'AI cannot taste - it learns yum from millions of reviews.'},
+  {w:'ALLERGY',p:'food',e:'\u26A0\uFE0F',d:'When a food makes someone sick.',g:'Scan a snack wrapper and AI checks if it is safe for you.'},
+  {w:'HEARTBEAT',p:'body',e:'\u2764\uFE0F',d:'The drum your heart drums all day.',g:'Smartwatches use AI to spot a heartbeat that sounds off.'},
+  {w:'FACE UNLOCK',p:'body',e:'\uD83D\uDE42',d:'Opening your phone by looking at it.',g:'Your phone learned your face from examples - that is machine learning!'},
+  {w:'STEP COUNTER',p:'body',e:'\uD83D\uDC5F',d:'Counts how much you walk.',g:'Ten thousand steps a day - your watch keeps score.'},
+  {w:'X-RAY',p:'body',e:'\uD83E\uDDBB',d:'A picture of your bones.',g:'AI helps doctors spot a tiny crack too small to see.'},
+  {w:'SLEEP TRACKER',p:'body',e:'\uD83D\uDE34',d:'Guesses how well you slept.',g:'It guesses deep sleep from how still you lie.'},
+  {w:'REFLEX',p:'body',e:'\u26A1',d:'A move your body makes before you think.',g:'Self-driving cars need reflexes even faster than yours.'},
+  {w:'SELF-DRIVING CAR',p:'transport',e:'\uD83D\uDE99',d:'A car that steers itself.',g:'It watches the road with cameras, radar and lots of training.'},
+  {w:'TRAFFIC JAM',p:'transport',e:'\uD83D\uDEA6',d:'When everyone wants the same road at once.',g:'AI traffic lights change their timing to unstick a jam.'},
+  {w:'ROUTE',p:'transport',e:'\uD83D\uDDFA\uFE0F',d:'The path from A to B.',g:'Fastest or prettiest? Your map app does the math.'},
+  {w:'FLIGHT PATH',p:'transport',e:'\u2708\uFE0F',d:'The road in the sky a plane follows.',g:'AI picks flight paths that save fuel and dodge storms.'},
+  {w:'ELECTRIC CAR',p:'transport',e:'\uD83D\uDD0B',d:'A car that runs on batteries.',g:'AI learns your drives to guess exactly how far the battery will go.'},
+  {w:'TRAIN SIGNAL',p:'transport',e:'\uD83D\uDE82',d:'The lights that keep trains safely apart.',g:'Computers check signals so two trains never share a track.'},
+  {w:'ARTWORK',p:'create',e:'\uD83D\uDDBC\uFE0F',d:'A picture made by a person - or an AI.',g:'AI paintings have even won art contests. Fair? You decide.'},
+  {w:'MUSIC AI',p:'create',e:'\uD83C\uDFB5',d:'AI that arranges sounds into songs.',g:'It can compose in the style of your favorite band.'},
+  {w:'STORY GENERATOR',p:'create',e:'\uD83D\uDCD6',d:'AI that spins tales from a tiny idea.',g:'Give it three words and it writes a whole adventure.'},
+  {w:'DESIGN',p:'create',e:'\uD83D\uDCD0',d:'Planning how something looks and works.',g:'AI can sketch 100 chair ideas before lunch.'},
+  {w:'ANIMATION',p:'create',e:'\uD83C\uDF9E\uFE0F',d:'Drawings that move.',g:'AI fills in the frames between an artist\'s drawings.'},
+  {w:'STYLE TRANSFER',p:'create',e:'\uD83C\uDFAD',d:'Making one picture copy another\'s style.',g:'Your selfie, painted like a 200-year-old portrait.'},
+  {w:'PASSWORD',p:'safety',e:'\uD83D\uDD11',d:'A secret word that locks your stuff.',g:'Make it long and weird, like PurpleTiger!Eats9Noodles.'},
+  {w:'PRIVACY',p:'safety',e:'\uD83E\uDD2B',d:'Keeping your personal info yours.',g:'Ask before an app takes your photo or your location.'},
+  {w:'SCAM',p:'safety',e:'\uD83C\uDFA3',d:'A trick message that wants your secrets.',g:'"You won a prize!" No, you did not. Delete.'},
+  {w:'STRANGER ONLINE',p:'safety',e:'\uD83D\uDC64',d:'Someone you do not know on the internet.',g:'Kind online is still unknown - never share your address.'},
+  {w:'DIGITAL FOOTPRINT',p:'safety',e:'\uD83D\uDC63',d:'The trail you leave online.',g:'Posts can outlive the delete button. Share kindly!'},
+  {w:'WEBSITE',p:'web',e:'\uD83D\uDDA5\uFE0F',d:'A place on the internet you can visit.',g:'Wonderbyte is a website that lives in the cloud!'},
+  {w:'LINK',p:'web',e:'\uD83D\uDD17',d:'A doorway from one page to another.',g:'The web is called a web because links tie it all together.'},
+  {w:'SPAM',p:'web',e:'\uD83E\uDD6B',d:'Junk messages nobody asked for.',g:'AI spam filters catch millions of junk messages every day.'},
+  {w:'VIDEO CALL',p:'web',e:'\uD83D\uDCF9',d:'Seeing and hearing someone far away.',g:'AI cleans up the sound so grandma hears you, not the fan.'},
+  {w:'EMOJI',p:'web',e:'\uD83D\uDE00',d:'A tiny picture that carries a feeling.',g:'AI reads emojis to guess if a message is happy or grumpy.'},
+  {w:'OFFLINE',p:'web',e:'\uD83D\uDCF4',d:'When the internet takes a break.',g:'Some apps keep working offline - Wonderbyte does!'},
+  {w:'SMART HOME',p:'basics',e:'\uD83C\uDFE0',d:'A house with helpful AI inside.',g:'Lights that know when you walk in are a tiny bit of AI.'},
+  {w:'VOICE CLONE',p:'basics',e:'\uD83C\uDF99\uFE0F',d:'AI copying a voice.',g:'Cool for audiobooks, tricky for fakes - always check who is talking.'},
+  {w:'TRANSLATE',p:'basics',e:'\uD83D\uDCAC',d:'Turning words from one language into another.',g:'AI translates menus, comics and grandma\'s recipes.'},
+  {w:'GAME AI',p:'basics',e:'\uD83C\uDFAE',d:'The computer player you play against.',g:'It learned to beat champions by playing itself millions of times.'},
+  {w:'SMART TOY',p:'basics',e:'\uD83E\uDDF8',d:'A toy that listens and responds.',g:'A smart toy should never share what you say.'},
+  {w:'ROBOT VACUUM',p:'basics',e:'\uD83C\uDF00',d:'A cleaning robot that maps your rooms.',g:'It remembers where the sofa lives so it never bumps twice.'},
 ];
+function wordId(w){return 'word-'+w.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
 function showWordOfDay(){
   const slot=document.getElementById('wotd-slot');
   if(!slot)return;
   const i1=dayOfYear()%WOTD.length, i2=(dayOfYear()+1)%WOTD.length;
-  slot.innerHTML=`<div class="wotd-strip">${[i1,i2].map(k=>{const w=WOTD[k];const got=S.cards.includes('word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-'));return `
+  slot.innerHTML=`<div class="wotd-strip">${[i1,i2].map(k=>{const w=WOTD[k];const got=S.cards.includes(wordId(w.w));return `
     <div class="wotd-card" data-k="${k}">
       <span class="wotd-emoji">${w.e}</span>
       <div class="wotd-label">WORD OF THE DAY${got?' · COLLECTED ✓':''}</div>
@@ -1268,13 +1341,14 @@ function showWordOfDay(){
     </div>`}).join('')}</div>`;
   slot.querySelectorAll('.wotd-card').forEach(el=>el.onclick=()=>{sfx('tap');showWordCard(parseInt(el.dataset.k,10));});
 }
-function showWordCard(k){
+function showWordCard(k,backFn){
   const w=WOTD[k];
-  const wid='word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const wid=wordId(w.w);
   const owned=S.cards.includes(wid);
+  const ret=backFn||showMap;
   go(`
     <div class="screen on">
-      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">💡 Word of the Day</div><span style="width:40px"></span></div>
+      <div class="topbar"><button class="icon-btn" id="back">${backFn?'📚':'🗺️'}</button><div class="who">💡 ${backFn?'Word Pack':'Word of the Day'}</div><span style="width:40px"></span></div>
       <div class="bit-wrap bit-float">${bitSVG({size:110,expr:'happy'})}</div>
       <div class="speech">Ooh, good one! Say it with me: <b>${w.w}</b>!</div>
       <div class="card" style="background:linear-gradient(150deg,#2D3436 0%,#3d4650 100%)">
@@ -1285,8 +1359,100 @@ function showWordCard(k){
         <button class="btn teal" id="wotd-done" style="margin-top:18px">${owned?'Collected ✓ 🗺️':'Got it! 🧠'}</button>
       </div>
     </div>`,()=>{
+      document.getElementById('back').onclick=ret;
+      document.getElementById('wotd-done').onclick=()=>{if(!owned){earnCard(wid);sfx('good');}ret();};
+    });
+}
+
+/* ================= WORD PACK SCREENS ================= */
+function packProgress(pid){
+  const words=WOTD.map((w,i)=>({w,i})).filter(x=>x.w.p===pid);
+  const got=words.filter(x=>S.cards.includes(wordId(x.w.w))).length;
+  return {words:words,got:got};
+}
+function showPacks(){
+  const totalGot=S.cards.filter(c=>c.indexOf('word-')===0).length;
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">📚 Word Packs</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:100,expr:'happy'})}</div>
+      <div class="speech">Pick a pack, tap any word, and it is yours forever! (${totalGot} of ${WOTD.length} words collected)</div>
+      ${PACKS.map(p=>{
+        const pr=packProgress(p.id);
+        return `<div class="island" data-p="${p.id}">
+          <div class="scene">${p.e}</div>
+          <div class="meta"><h3>${p.name}</h3><p>${p.tag}</p></div>
+          <span class="badge ${pr.got===pr.words.length?'done':'next'}">${pr.got===pr.words.length?'ALL ✓':pr.got+'/'+pr.words.length}</span>
+        </div>`;}).join('')}
+      <div class="footer-space"></div>
+    </div>`,()=>{
       document.getElementById('back').onclick=showMap;
-      document.getElementById('wotd-done').onclick=()=>{if(!owned){earnCard(wid);sfx('good');}showMap();};
+      document.querySelectorAll('.island').forEach(el=>el.onclick=()=>{sfx('tap');showPack(el.dataset.p);});
+    });
+}
+function showPack(pid){
+  const p=PACKS.find(x=>x.id===pid);
+  const pr=packProgress(pid);
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">📚</button><div class="who">${p.e} ${p.name}</div><span style="width:40px"></span></div>
+      <div class="speech" style="margin-top:14px">${p.tag}! Tap a word to learn it and collect its card. (${pr.got} of ${pr.words.length})</div>
+      <div class="brain-book-grid">
+        ${pr.words.map(x=>{const owned=S.cards.includes(wordId(x.w.w));return `
+          <div class="bcard owned" data-k="${x.i}" style="position:relative">
+            <span class="e">${x.w.e}</span>
+            <div class="t">${x.w.w}</div>
+            ${owned?'<span class="pill" style="position:absolute;top:6px;right:6px;margin:0">✓</span>':''}
+          </div>`;}).join('')}
+      </div>
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showPacks;
+      document.querySelectorAll('.bcard').forEach(el=>el.onclick=()=>{sfx('tap');showWordCard(parseInt(el.dataset.k,10),()=>showPack(pid));});
+    });
+}
+/* ================= STORY CORNER SCREENS ================= */
+function showStories(){
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">🗺️</button><div class="who">📖 Story Corner</div><span style="width:40px"></span></div>
+      <div class="bit-wrap bit-float">${bitSVG({size:100,expr:'happy'})}</div>
+      <div class="speech">Stories about Abir, Kashvi and me! Finish one to earn its card. (${S.stories.length} of ${STORIES.length} read)</div>
+      ${STORIES.map(st=>{const read=S.stories.includes(st.id);return `
+        <div class="island" data-s="${st.id}">
+          <div class="scene">${st.e}</div>
+          <div class="meta"><h3>${st.t}</h3><p>${st.pages.length} pages · with Abir &amp; Kashvi</p></div>
+          <span class="badge ${read?'done':'next'}">${read?'READ ✓':'NEW!'}</span>
+        </div>`;}).join('')}
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showMap;
+      document.querySelectorAll('.island').forEach(el=>el.onclick=()=>{sfx('tap');showStory(el.dataset.s,0);});
+    });
+}
+function showStory(id,pg){
+  const st=STORIES.find(x=>x.id===id);
+  const last=pg>=st.pages.length-1;
+  const read=S.stories.includes(id);
+  go(`
+    <div class="screen on">
+      <div class="topbar"><button class="icon-btn" id="back">📖</button><div class="who">${st.e} ${st.t}</div><span style="width:40px"></span></div>
+      <div class="card" style="margin-top:16px">
+        <div class="center" style="font-size:44px">${st.e}</div>
+        <p style="font-size:19px;font-weight:700;line-height:1.55;margin-top:12px">${st.pages[pg]}</p>
+        ${last?`<div class="banner" style="margin-top:14px">🤔 <b>Think about it:</b> ${st.q}</div>`:''}
+        <div class="row" style="margin-top:16px;align-items:center">
+          <span class="pill center" style="flex:0 0 auto;padding:8px 14px">${pg+1} / ${st.pages.length}</span>
+          <button class="btn ${last?'green':'teal'}" id="st-next" style="margin:0">${last?(read?'Done ✓':'The End! ⭐'):'Next ▸'}</button>
+        </div>
+      </div>
+      <div class="footer-space"></div>
+    </div>`,()=>{
+      document.getElementById('back').onclick=showStories;
+      document.getElementById('st-next').onclick=()=>{
+        if(last){if(!S.stories.includes(id)){S.stories.push(id);earnCard('story-'+id);sfx('good');confetti();}showStories();}
+        else{sfx('tap');showStory(id,pg+1);}
+      };
     });
 }
 /* ================= LESSON 6: PROMPT PORT ================= */
@@ -1571,6 +1737,67 @@ function ggDone(){
       document.getElementById('replay').onclick=()=>ggPick([]);
     });
 }
+
+/* ================= WORD PACKS (themed vocabulary) ================= */
+const PACKS=[
+  {id:'basics',e:'🤖',name:'Robot School',tag:'The core ideas every AI master needs'},
+  {id:'web',e:'🌐',name:'Web World',tag:'How the internet moves your stuff around'},
+  {id:'space',e:'🚀',name:'Space Mission',tag:'AI beyond the clouds'},
+  {id:'animals',e:'🦁',name:'Animal Safari',tag:'Tech that watches over wildlife'},
+  {id:'money',e:'💰',name:'Money Mart',tag:'Smart coins and clever shops'},
+  {id:'food',e:'🍕',name:'Snack Lab',tag:'AI in the kitchen and on the farm'},
+  {id:'body',e:'🦸',name:'Super Senses',tag:'Your body, measured by machines'},
+  {id:'transport',e:'🚗',name:'Travel Town',tag:'Cars, trains and planes that think'},
+  {id:'create',e:'🎨',name:'Maker Studio',tag:'AI that draws, writes and sings'},
+  {id:'safety',e:'🛡️',name:'Stay Safe',tag:'Street-smart rules for the online world'},
+  {id:'people',e:'👩‍💻',name:'AI People',tag:'The humans behind the robots'},
+];
+/* ================= STORY CORNER ================= */
+const STORIES=[
+  {id:'red-apples',e:'🍎',t:'The Robot Who Loved Red',pages:[
+    "Abir was teaching Bit to spot apples. \"Easy!\" said Abir. He showed Bit ten photos - all shiny, all RED.",
+    "\"Got it!\" beeped Bit. \"Apples are red, round and shiny. I am officially a genius.\"",
+    "Then Kashvi held up a green apple. Bit looked at it proudly. \"NOT AN APPLE,\" he announced. \"Apples are red!\"",
+    "Kashvi giggled. \"You only learned the red kind!\" So they fed Bit green apples, yellow apples, tiny apples, bumpy apples - five hundred of them.",
+    "Now Bit spots every apple in the orchard. \"More kinds of examples,\" he hummed, \"makes a less confused robot.\""],
+   q:'If you taught an AI with only photos of YOUR dog, what would it think all dogs look like?'},
+  {id:'sure-answer',e:'🌙',t:'The Too-Sure Answer',pages:[
+    "\"Bit,\" asked Kashvi, \"how many moons does Earth have?\" \"NINE HUNDRED,\" said Bit, with a very confident beep.",
+    "\"Are you sure?\" \"I am 99% sure,\" said Bit, puffing up his chest plate. \"I read it... somewhere. Probably.\"",
+    "Abir raised an eyebrow. \"Bit sounds sure. But sure-sounding is not the same as true.\" He opened a real science book. One moon. ONE.",
+    "Bit's lights turned pink. \"I mixed up my numbers and said it like a fact. I am very good at sounding right - even when I'm wrong.\"",
+    "Now whenever Bit answers something important, he adds: \"Want to check me?\" And they always do."],
+   q:'What is one thing you could check in a book or with a grown-up before believing it?'},
+  {id:'painting',e:'🎨',t:'The Painting Contest',pages:[
+    "The school announced a painting contest. Kashvi typed into an art AI: \"Dragon eating ice cream, rainbow sky, super silly.\" Out popped a masterpiece.",
+    "\"Whoa,\" said Abir. \"Did YOU paint it?\" Kashvi paused. \"I... typed it.\"",
+    "\"Then the trophy question,\" said Abir, \"is who really made it? You had the idea. The AI had the practice.\"",
+    "Kashvi thought hard. Then she entered the contest anyway - with a label under her painting: \"Idea by Kashvi. Painted with AI.\"",
+    "She didn't win first prize. She won the honesty ribbon - and three kids asked her to teach them prompting."],
+   q:'If an AI helps you make something, what is the fair way to say so?'},
+  {id:'password',e:'🔑',t:'The Case of the Lazy Password',pages:[
+    "Abir's little cousin locked her game account with the password 1-2-3-4. \"Easy to remember!\" she said.",
+    "\"Easy to remember,\" said Detective Kashvi, pulling on an imaginary trench coat, \"means easy to GUESS.\"",
+    "That weekend they built a monster password together: PurpleTiger!Eats9Noodles. \"Long, weird, and nobody's birthday,\" declared Kashvi.",
+    "Then a message popped up: \"You WON a free pet unicorn! Click here!\" The detective squinted. \"Unicorns don't email. Delete.\"",
+    "Case closed. The account stayed safe, and the cousin got a badge: Junior Password Detective."],
+   q:'What would YOUR monster password recipe look like? (Never share the real one!)'},
+  {id:'homework',e:'📝',t:'The Great Homework Shortcut',pages:[
+    "Kashvi had a big essay due. \"Bit, write my homework for me!\" Bit whirred - and wrote a whole page in one second.",
+    "It looked perfect. It sounded fancy. And when the teacher asked, \"What does this sentence mean?\" - Kashvi had no idea.",
+    "Her cheeks went hot. \"I handed in Bit's brain, not mine.\"",
+    "So they tried again, the fair way: Kashvi wrote her own messy draft, then asked Bit, \"What is confusing? What did I miss?\" His hints made HER work better.",
+    "Her second essay was all Kashvi - with a robot coach on the bench, not a robot player on the field."],
+   q:'When is using AI a coach, and when is it a shortcut? Who can help you decide?'},
+  {id:'chatty-toy',e:'🧸',t:'The Chatty Toy',pages:[
+    "Abir got a smart toy bear for his birthday. It told jokes, remembered his name, and - his mom noticed - had a little light that listened ALL the time.",
+    "\"Where does everything we say go?\" asked Mom. Abir checked the box: \"Your voice travels to the cloud to help the bear learn.\"",
+    "\"So our living room chats fly to a far-away computer?\" said Abir. \"Even the embarrassing songs?\"",
+    "Together they flipped the bear's privacy switch: no sharing, and delete old recordings. The bear still told jokes. It just stopped taking notes.",
+    "\"Smart toys are fun,\" said Abir, \"but our words belong to us.\" Kashvi agreed - and taught the bear her favorite riddle anyway."],
+   q:'What would you ask a grown-up to check before bringing a listening toy home?'},
+];
+
 /* ================= BRAIN BOOK ================= */
 const CARDS={
   'what-is-ai':{e:'🤖',t:'What is AI?',d:T('AI is when computers learn from examples instead of only following fixed rules.','AI = computers that learn patterns from examples, instead of only following hand-written rules.')},
@@ -1591,9 +1818,12 @@ const CARDS={
 };
 /* Word of the Day words double as collectible Brain Book cards */
 WOTD.forEach(w=>{
-  const id='word-'+w.w.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const id=wordId(w.w);
   const t=w.w.toLowerCase().split(' ').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ').replace(/\bAi\b/g,'AI');
   CARDS[id]={e:w.e,t:t,d:w.d+' '+w.g};
+});
+STORIES.forEach(st=>{
+  CARDS['story-'+st.id]={e:st.e,t:st.t,d:'A finished story from the Story Corner! Talk it over: '+st.q};
 });
 function showBrainBook(){
   go(`
@@ -1652,7 +1882,8 @@ function showParent(){
       <div class="card">
         <h2>What ${esc(S.profile.name)} learned</h2>
         ${learned.length?learned.map(l=>`<p style="font-weight:600;margin-top:8px">✅ ${l}</p>`).join(''):'<p class="muted" style="margin-top:8px">Nothing yet - the adventure awaits!</p>'}
-        <p style="font-weight:600;margin-top:8px">📚 Word of the Day cards collected: ${S.cards.filter(c=>c.indexOf('word-')===0).length} of ${WOTD.length}</p>
+        <p style="font-weight:600;margin-top:8px">📚 Word cards collected: ${S.cards.filter(c=>c.indexOf('word-')===0).length} of ${WOTD.length} (across ${PACKS.length} themed packs)</p>
+        <p style="font-weight:600;margin-top:8px">📖 Stories read: ${S.stories.length} of ${STORIES.length} - each ends with a question to talk about together</p>
       </div>
       <div class="card">
         <h2>Our promises 🛡️</h2>
