@@ -430,8 +430,6 @@ function showMap(){
       <div class="footer-space"></div>
     </div>`,()=>{
       document.getElementById('map-book').onclick=showBrainBook;
-      document.getElementById('open-packs').onclick=()=>{sfx('tap');showPacks();};
-      document.getElementById('open-stories').onclick=()=>{sfx('tap');showStories();};
       document.getElementById('map-parent').onclick=()=>showGate('parent');
       document.getElementById('map-sound').onclick=()=>{S.sound=!(S.sound===false);save();document.getElementById('map-sound').textContent=S.sound?'🔊':'🔇';sfx('tap');};
       document.getElementById('map-bit').onclick=bitHello;
@@ -448,6 +446,8 @@ function showMap(){
         if(id==='i6')lesson6();
         if(id==='i7')lesson7();
       });
+      document.getElementById('open-packs').onclick=()=>{sfx('tap');showPacks();};
+      document.getElementById('open-stories').onclick=()=>{sfx('tap');showStories();};
       maybeBreakNudge();
     });
 }
